@@ -1,0 +1,648 @@
+﻿TY  - JOUR
+AU  - Wang, XY
+AU  - Chen, B
+AU  - Song, Y
+TI  - Dynamic change of international arms trade network structure and its influence mechanism
+T2  - INTERNATIONAL JOURNAL OF EMERGING MARKETS
+LA  - English
+KW  - Arms trade
+KW  - Trade network
+KW  - Temporal exponential random graph model
+KW  - HUMAN-RIGHTS
+KW  - TRANSFERS
+KW  - CONFLICTS
+KW  - EVOLUTION
+KW  - DEFENSE
+KW  - EXPORTS
+KW  - IMPACT
+AB  - PurposeThe purpose of this study is to analyze the dynamic changes of the arms trade network not only from the network structure but also the influence mechanism from the aspects of the economy, politics, security, strategy and transaction costs.Design/methodology/approachThe study employs the Temporal Exponential Random Graph Model and the Separable Temporal Exponential Random Graph Model to analyze the endogenous network structure effect, the attribute effect and the exogenous network effect of 47 major arms trading countries from 2015 to 2020.FindingsThe results show that the international arms trade market is unevenly distributed, and there are great differences in military technology. There is a fixed hierarchical structure in the arms trade, but the rise of emerging countries is expected to break this situation. In international arms trade relations, economic forces dominate, followed by political, security and strategic factors.Practical implicationsEconomic and political factors play an important role in the arms trade. Therefore, countries should strive to improve their economic strength and military technology. Also, countries should increase political mutual trust and gain a foothold in the industrial chain of arms production to enhance their military power.Originality/valueThe contribution of this paper is to analyze the special trade area of arms trade from a dynamic network perspective by incorporating economic, political, security, strategic and transaction cost factors together into the TERGM and STERGM models.
+AD  - Cent Univ Finance & Econ, Inst Def Econ & Management, Beijing, Peoples R ChinaC3  - Central University of Finance & EconomicsFU  - "Strategic Economy Interdisciplinarity (Beijing Universities Advanced Disciplines Initiative) [GJJ2019163]; Social Science Foundation of Beijing [22JJB011]
+FX  - This work is supported by "Strategic Economy Interdisciplinarity (Beijing Universities Advanced Disciplines Initiative, No. GJJ2019163)" and "Social Science Foundation of Beijing (22JJB011)".
+PU  - EMERALD GROUP PUBLISHING LTD
+PI  - BINGLEY
+PA  - HOWARD HOUSE, WAGON LANE, BINGLEY BD16 1WA, W YORKSHIRE, ENGLAND
+SN  - 1746-8809
+SN  - 1746-8817
+J9  - INT J EMERG MARK
+JI  - Int. J. Emerg. Mark.
+DA  - 2023 APR 27
+PY  - 2023
+DO  - 10.1108/IJOEM-07-2022-1058
+C6  - APR 2023
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000975297100001
+N1  - Times Cited in Web of Science Core Collection:  0
+Total Times Cited:  0
+Cited Reference Count:  42
+ER  -
+
+TY  - JOUR
+AU  - Chou, CC
+AU  - Teng, CS
+AU  - Tung, HH
+TI  - How do alliances trade arms? Political alliance networks and global arms transfers
+T2  - PLOS ONE
+LA  - English
+KW  - CONFLICT
+AB  - The arms trade has come to the center stage of the international political economy. Yet only a few quantitative studies have been conducted on the political economy of the arms trade. This paper focuses on the security rents shared by trading partners in determining their arms trade relationship. We argue that the mechanism of reciprocity is better understood from the perspective of an international alliance network. Because the rents are likely to be transferred to other related members in a community, when a state is engaged in an arms deal with another state, it takes into account not only the direct dyadic relationship but also the alliance community to which the other state belongs. Based on this understanding, we employ social network analysis (SNA) to identify the effect of the international alliance community on the arms trade. Our findings suggest that if two states have a tie in a political alliance network, they are also likely to have a tie in the arms sale network. Moreover, we also find that the alliance network is a strong predictor of bilateral arms sales. Being in the same alliance community encourages two states to trade more arms with each other.
+AD  - Natl Taiwan Univ, Grad Inst Natl Dev, Taipei, TaiwanAD  - Natl Taiwan Univ, Dept Polit Sci, Taipei, TaiwanC3  - National Taiwan UniversityC3  - National Taiwan UniversityFU  - NSTC [110-2410-H-002 -044 -MY2]; National Science and Technology Council, Taiwan
+FX  - Chelsea C. Chou, NSTC 110-2410-H-002 -044 -MY2, https://www.nstc.gov.tw/, National Science and Technology Council, Taiwan. The funders had no role in study design, data collection and analysis, decision to publish, or preparation of the manuscript.
+PU  - PUBLIC LIBRARY SCIENCE
+PI  - SAN FRANCISCO
+PA  - 1160 BATTERY STREET, STE 100, SAN FRANCISCO, CA 94111 USA
+SN  - 1932-6203
+J9  - PLOS ONE
+JI  - PLoS One
+DA  - MAR 1
+PY  - 2023
+VL  - 18
+IS  - 3
+DO  - 10.1371/journal.pone.0282456
+WE  - Science Citation Index Expanded (SCI-EXPANDED)AN  - WOS:000942456500045
+N1  - Times Cited in Web of Science Core Collection:  0
+Total Times Cited:  0
+Cited Reference Count:  23
+ER  -
+
+TY  - JOUR
+AU  - Lee, KH
+AU  - Agarwal, A
+AU  - Zhang, AY
+AU  - Xue, LZ
+TI  - Model-based clustering of semiparametric temporal exponential-family random graph models
+T2  - STAT
+LA  - English
+KW  - arm trade networks
+KW  - dynamic networks
+KW  - functional network parameters
+KW  - international trade networks
+KW  - model selection
+KW  - temporal ERGMs
+KW  - variational EM algorithm
+KW  - SOCIAL NETWORKS
+AB  - Model-based clustering of time-evolving networks has emerged as one of the important research topics in statistical network analysis. It is a fundamental research question to model time-varying network parameters. However, due to difficulties in modelling functional network parameters, there is little progress in the current literature to model time-varying network parameters effectively. In this work, we model network parameters as univariate nonparametric functions instead of constants. We effectively estimate those functional network parameters in temporal exponential-family random graph models using a kernel regression technique and a local likelihood approach. Furthermore, we propose a semiparametric finite mixture of temporal exponential-family random graph models by adopting finite mixture models, which simultaneously allows both modelling and detecting groups in time-evolving networks. Also, we use a conditional likelihood to construct an effective model selection criterion and network cross-validation to choose an optimal bandwidth. The power of our method is demonstrated in simulation studies and real-world applications to dynamic international trade networks and dynamic arm trade networks.
+AD  - Western Michigan Univ, Dept Stat, Kalamazoo, MI 49008 USAAD  - eBay Inc, San Jose, CA 95125 USAAD  - Penn State Univ, Dept Educ Psychol Counseling & Special Educ, State Coll, PA 16802 USAAD  - Penn State Univ, Dept Stat, State Coll, PA 16802 USAC3  - Western Michigan UniversityC3  - eBay Inc.C3  - Pennsylvania Commonwealth System of Higher Education (PCSHE)C3  - Pennsylvania State UniversityC3  - Pennsylvania Commonwealth System of Higher Education (PCSHE)C3  - Pennsylvania State UniversityFU  - National Science Foundation (NSF) [DMS-1811552, DMS1953189, CCF-2007823]
+FX  - National Science Foundation (NSF), Grant/Award Numbers: DMS-1811552, DMS1953189, CCF-2007823
+PU  - WILEY
+PI  - HOBOKEN
+PA  - 111 RIVER ST, HOBOKEN 07030-5774, NJ USA
+SN  - 2049-1573
+J9  - STAT-US
+JI  - Stat
+DA  - DEC
+PY  - 2022
+VL  - 11
+IS  - 1
+C7  - e459
+DO  - 10.1002/sta4.459
+WE  - Science Citation Index Expanded (SCI-EXPANDED)WE  - Social Science Citation Index (SSCI)AN  - WOS:000778497100001
+N1  - Times Cited in Web of Science Core Collection:  0
+Total Times Cited:  0
+Cited Reference Count:  31
+ER  -
+
+TY  - JOUR
+AU  - Jang, Y
+AU  - Yang, JS
+TI  - The Dynamics of the Global Arms Trade Network: States' Stability and Instability
+T2  - DEFENCE AND PEACE ECONOMICS
+LA  - English
+KW  - Global arms trade
+KW  - State stability
+KW  - Security-related factors
+KW  - Network analysis
+KW  - ERGM
+KW  - FOREIGN-POLICY
+KW  - HUMAN-RIGHTS
+AB  - This study identifies security-related factors affecting the formation of the global arms trade network. This empirical analysis using a quantitative approach includes data from multiple sources (the Global Peace Index, Political Stability Index, Democracy Index, Global Terrorism Index, Fragile State Index, and military expenditure as a percentage of GDP) and multiple states analyzed using the ERGM. Arms trade data related to six attributes of states representing their (in)stability is collected and analyzed for 2012-2018. Our findings are as follows: (1) states with greater internal stability import more arms, which affects the formation of the global arms trade network; (2) states with greater external instability import more arms, which also affects the formation of the global arms trade network. This study makes two academic contributions, as follows. First, we analyze factors that form the global arms trade network from a holistic or systemic perspective. Second, we analyze those factors empirically and statistically from a security perspective.
+AD  - Korea Adv Inst Sci & Technol, Grad Sch Future Strategy, Daejeon, South KoreaC3  - Korea Advanced Institute of Science & Technology (KAIST)PU  - TAYLOR & FRANCIS LTD
+PI  - ABINGDON
+PA  - 2-4 PARK SQUARE, MILTON PARK, ABINGDON OR14 4RN, OXON, ENGLAND
+SN  - 1024-2694
+SN  - 1476-8267
+J9  - DEFENCE PEACE ECON
+JI  - Def. Peace Econ.
+DA  - 2022 JUN 24
+PY  - 2022
+DO  - 10.1080/10242694.2022.2091610
+C6  - JUN 2022
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000815449800001
+N1  - Times Cited in Web of Science Core Collection:  2
+Total Times Cited:  2
+Cited Reference Count:  46
+ER  -
+
+TY  - JOUR
+AU  - Pamp, O
+AU  - Lebacher, M
+AU  - Thurner, P
+AU  - Ziegler, E
+TI  - Explaining destinations and volumes of international arms transfers: A novel network Heckman selection model
+T2  - EUROPEAN JOURNAL OF POLITICAL ECONOMY
+LA  - English
+KW  - Arms trade
+KW  - Network analysis
+KW  - Heckman
+KW  - Gravity equation
+KW  - Maximum likelihood
+KW  - HUMAN-RIGHTS
+KW  - TRADE
+KW  - DEMOCRACY
+KW  - WORLD
+KW  - ORGANIZATIONS
+KW  - DEPENDENCE
+KW  - CENTRALITY
+KW  - FRIENDS
+KW  - IMPACT
+KW  - BIAS
+AB  - What determines the volumes of international weapon transfers? And why do countries establish such arms trading relationships in the first place? We propose an innovative statistical strategy that builds on the gravity approach and combines a Heckman model with a network analysis. This allows us, for the first time, to analyze the impact of network structures on both the extensive and the intensive margins of the international arms trade simultaneously. We argue that the structure of the arms transfer network conveys important information for exporting and importing countries. Therefore, past topological properties of the trade network play a central role in its future evolution. Using data on the trade of major conventional weapons between 1955 and 2018, our estimation results and out-of-sample predictions show that network structures have considerable explanatory power with respect to the creation of trade links. They are far less relevant for the explanation of trade volumes, which are mainly determined by demand factors.
+AD  - Ludwig Maximilians Univ Munchen, Dept Polit Sci, Oettingenstr 67, D-80538 Munich, GermanyAD  - Ludwig Maximilians Univ Munchen, Dept Stat, Munich, GermanyC3  - University of MunichC3  - University of MunichFU  - DFG [TH 697/9-1, KA 1188/10-1]
+FX  - Financial support by the DFG under grants TH 697/9-1 and KA 1188/10-1 'International Arms Trade: A NetworkApproach' is gratefully acknowledged by Paul W. Thurner and Michael Lebacher.
+PU  - ELSEVIER SCIENCE INC
+PI  - NEW YORK
+PA  - STE 800, 230 PARK AVE, NEW YORK, NY 10169 USA
+SN  - 0176-2680
+SN  - 1873-5703
+J9  - EUR J POLIT ECON
+JI  - Eur. J. Polit. Econ.
+DA  - SEP
+PY  - 2021
+VL  - 69
+C7  - 102033
+DO  - 10.1016/j.ejpoleco.2021.102033
+C6  - SEP 2021
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000699733300016
+N1  - Times Cited in Web of Science Core Collection:  2
+Total Times Cited:  2
+Cited Reference Count:  73
+ER  -
+
+TY  - JOUR
+AU  - Fritz, C
+AU  - Thurner, PW
+AU  - Kauermann, G
+TI  - Separable and semiparametric network-based counting processes applied to the international combat aircraft trades
+T2  - NETWORK SCIENCE
+LA  - English
+KW  - arms trade network
+KW  - combat aircraft
+KW  - longitudinal network analysis
+KW  - relational event model
+KW  - RANDOM GRAPH MODELS
+KW  - SOCIAL NETWORKS
+KW  - REGRESSION
+AB  - We propose a novel tie-oriented model for longitudinal event network data. The generating mechanism is assumed to be a multivariate Poisson process that governs the onset and repetition of yearly observed events with two separate intensity functions. We apply the model to a network obtained from the yearly dyadic number of international deliveries of combat aircraft trades between 1950 and 2017. Based on the trade gravity approach, we identify economic and political factors impeding or promoting the number of transfers. Extensive dynamics as well as country heterogeneities require the specification of semiparametric time-varying effects as well as random effects. Our findings reveal strong heterogeneous as well as time-varying effects of endogenous and exogenous covariates on the onset and repetition of aircraft trade events.
+AD  - Ludwig Maximilians Univ Munchen, Dept Stat, Munich, GermanyAD  - Ludwig Maximilians Univ Munchen, Geschwister Scholl Inst Polit Sci, Munich, GermanyC3  - University of MunichC3  - University of MunichFU  - European Cooperation in Science and Technology [COST Action (COSTNET)] [CA15109]; German Research Foundation (DFG) [KA 1188/10-1, TH 697/9-1]; German Federal Ministry of Education and Research (BMBF) [01IS18036A]
+FX  - The project was supported by the European Cooperation in Science and Technology [COST Action CA15109 (COSTNET)]. We also gratefully acknowledge funding provided by the German Research Foundation (DFG) for the project KA 1188/10-1 and TH 697/9-1: International Trade of Arms: A Network Approach. Furthermore, the work has been partially supported by the German Federal Ministry of Education and Research (BMBF) under Grant No. 01IS18036A. The authors of this work take full responsibilities for its content.
+PU  - CAMBRIDGE UNIV PRESS
+PI  - NEW YORK
+PA  - 32 AVENUE OF THE AMERICAS, NEW YORK, NY 10013-2473 USA
+SN  - 2050-1242
+SN  - 2050-1250
+J9  - NETW SCI
+JI  - Netw. Sci.
+DA  - SEP
+PY  - 2021
+VL  - 9
+IS  - 3
+SP  - 291
+EP  - 311
+C7  - PII S2050124221000096
+DO  - 10.1017/nws.2021.9
+WE  - Emerging Sources Citation Index (ESCI)AN  - WOS:000721243900004
+N1  - Times Cited in Web of Science Core Collection:  5
+Total Times Cited:  5
+Cited Reference Count:  84
+ER  -
+
+TY  - JOUR
+AU  - Lebacher, M
+AU  - Thurner, PW
+AU  - Kauermann, G
+TI  - A dynamic separable network model with actor heterogeneity: An application to global weapons transfers*
+T2  - JOURNAL OF THE ROYAL STATISTICAL SOCIETY SERIES A-STATISTICS IN SOCIETY
+LA  - English
+KW  - arms transfers
+KW  - functional principal component analysis
+KW  - generalized additive model
+KW  - security and defence network
+KW  - varying coefficient model
+KW  - GENERALIZED ADDITIVE-MODELS
+KW  - RANDOM GRAPH MODELS
+KW  - LIKELIHOOD-ESTIMATION
+KW  - MAXIMUM-LIKELIHOOD
+KW  - REGRESSION
+KW  - CURVES
+AB  - In this paper, we analyse the network of international major conventional weapons (MCW) transfers from 1950 to 2016, based on data from the Stockholm International Peace Research Institute (SIPRI). The dataset consists of yearly bilateral arms transfers between pairs of countries, which allows us to conceive of the individual relationships as part of an overall trade network. For the analysis, we extend the separable temporal exponential random graph model (STERGM) to account for time-varying effects on both the network level (trade network) and the actor level (country effects). Our investigation enables the identification of potentially differing driving forces that influence the formation of new trade relationships versus the persistence of existing ones. In accordance with political economy models, we expect security- and network-related covariates to be most important for the formation of transfers, whereas repeated transfers should prevalently be determined by the importers' market size and military spending. Our proposed modelling approach corroborates the hypothesis and quantifies the corresponding effects. Additionally, we subject the time-varying heterogeneity effects to a functional principal component analysis. This analysis serves as an exploratory tool and allows us to identify countries with exceptional increases or decreases in their tendency to import and export weapons.
+AD  - Ludwig Maximilians Univ Munchen, Dept Stat, Munich, GermanyAD  - Ludwig Maximilians Univ Munchen, Dept Polit Sci, Munich, GermanyC3  - University of MunichC3  - University of MunichFU  - German Research Foundation (DFG) [TH 697/9-1, KA 1188/10-1]; European Cooperation in Science and Technology [COST Action] [CA15109]
+FX  - Financial support by the German Research Foundation (DFG) under grants TH 697/9-1 and KA 1188/10-1 'International Arms Trade: A Network Approach' is gratefully acknowledged by the authors. Furthermore, the project benefited from the European Cooperation in Science and Technology [COST Action CA15109 (COSTNET)].
+PU  - OXFORD UNIV PRESS
+PI  - OXFORD
+PA  - GREAT CLARENDON ST, OXFORD OX2 6DP, ENGLAND
+SN  - 0964-1998
+SN  - 1467-985X
+J9  - J ROY STAT SOC A
+JI  - J. R. Stat. Soc. Ser. A-Stat. Soc.
+DA  - JAN
+PY  - 2021
+VL  - 184
+IS  - 1
+SP  - 201
+EP  - 226
+DO  - 10.1111/rssa.12620
+C6  - NOV 2020
+WE  - Science Citation Index Expanded (SCI-EXPANDED)WE  - Social Science Citation Index (SSCI)AN  - WOS:000584495700001
+N1  - Times Cited in Web of Science Core Collection:  5
+Total Times Cited:  5
+Cited Reference Count:  58
+ER  -
+
+TY  - JOUR
+AU  - Beardsley, K
+AU  - Liu, H
+AU  - Mucha, PJ
+AU  - Siegel, DA
+AU  - Tellez, JF
+TI  - Hierarchy and the Provision of Order in International Politics
+T2  - JOURNAL OF POLITICS
+LA  - English
+KW  - international conflict
+KW  - interdependence
+KW  - network analysis
+KW  - hierarchy
+KW  - community
+KW  - COMMUNITY STRUCTURE
+KW  - NETWORK ANALYSIS
+KW  - CONFLICT
+KW  - TRADE
+KW  - PEACE
+KW  - ALLIANCES
+KW  - DEMOCRACY
+KW  - INTERDEPENDENCE
+KW  - OPPORTUNITY
+KW  - INFORMATION
+AB  - The anarchic international system is actually heavily structured: communities of states join together for common benefit; strong states form hierarchical relationships with weak states to enforce order and achieve preferred outcomes. Breaking from prior research, we conceptualize structures such as community and hierarchy as properties of networks of states' interactions that can capture unobserved constraints in state behavior, constraints that may reduce conflict. We offer two claims. One, common membership in trade communities pacifies to the extent that breaking trade ties would entail high switching costs: thus, we expect heavy arms trade, more than most types of commercial trade, to reduce intracommunity conflict. Two, this is driven by hierarchical communities in which strong states can use high switching costs as leverage to constrain conflict between weaker states in the community. We find empirical support for these claims using a time-dependent multilayer network model and a new measure of hierarchy based on network centrality.
+AD  - Duke Univ, Polit Sci, Durham, NC 27701 USAAD  - Univ Essex, Dept Govt, Colchester, Essex, EnglandAD  - Univ N Carolina, Math & Appl Phys Sci, Chapel Hill, NC 27599 USAAD  - Duke Univ, Polit Sci, Durham, NC 27706 USAAD  - Univ South Carolina, Polit Sci, Columbia, SC 29208 USAC3  - Duke UniversityC3  - University of EssexC3  - University of North CarolinaC3  - University of North Carolina Chapel HillC3  - Duke UniversityC3  - University of South Carolina SystemC3  - University of South Carolina ColumbiaPU  - UNIV CHICAGO PRESS
+PI  - CHICAGO
+PA  - 1427 E 60TH ST, CHICAGO, IL 60637-2954 USA
+SN  - 0022-3816
+SN  - 1468-2508
+J9  - J POLIT
+JI  - J. Polit.
+DA  - APR 1
+PY  - 2020
+VL  - 82
+IS  - 2
+SP  - 731
+EP  - 746
+DO  - 10.1086/707096
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000530241000025
+N1  - Times Cited in Web of Science Core Collection:  3
+Total Times Cited:  3
+Cited Reference Count:  72
+ER  -
+
+TY  - JOUR
+AU  - Lebacher, M
+AU  - Thurner, PW
+AU  - Kauermann, G
+TI  - Exploring dependence structures in the international arms trade network: A network autocorrelation approach
+T2  - STATISTICAL MODELLING
+LA  - English
+KW  - Arms trade
+KW  - dependence structures
+KW  - model selection
+KW  - network disturbance model
+KW  - spatial econometrics
+KW  - EXPONENTIAL-FAMILY
+KW  - MODELS
+KW  - STATISTICS
+KW  - SCIENCE
+KW  - BRAIN
+AB  - In this article, we analyse dependence structures among international trade flows of major conventional weapons from 1952 to 2016. We employ a Network Disturbance Model commonly used in inferential network analysis and spatial econometrics. The dependence structure is represented by pre-defined weight matrices that allow for correlating flows from the network of international arms exchange. Three dependence structures are proposed, representing sender-, receiver- and sender-receiver-related dependencies. The appropriateness of the presumed structures is comparatively assessed using the Akaike Information Criterion (AIC). It turns out that the dependence structure among the arms trade flows is complex and can be represented best by a specification that relates each arms trade flow to all exports and imports of the sending and the receiving state. Controlling for exogenous variables, we find that the trade volume increases with the GDP of the sending and the receiving state while the impact of geographical distance, regime dissimilarity and formal alliance membership is rather small.
+AD  - Ludwig Maximilians Univ Munchen, Fac Math Informat & Stat, Dept Stat, Ludwigstr 33, D-80539 Munich, GermanyAD  - Ludwig Maximilians Univ Munchen, Fac Social Sci, Geschwister Scholl Inst Polit Sci, Munich, GermanyC3  - University of MunichC3  - University of MunichFU  - German Research Foundation (DFG) [TH 697/9-1, KA 1188/10-1]
+FX  - The authors acknowledge the financial support by the German Research Foundation (DFG) under grants TH 697/9-1 and KA 1188/10-1 'International Arms Trade: A Network Approach'.
+PU  - SAGE PUBLICATIONS LTD
+PI  - LONDON
+PA  - 1 OLIVERS YARD, 55 CITY ROAD, LONDON EC1Y 1SP, ENGLAND
+SN  - 1471-082X
+SN  - 1477-0342
+J9  - STAT MODEL
+JI  - Stat. Model.
+DA  - APR
+PY  - 2020
+VL  - 20
+IS  - 2
+SP  - 195
+EP  - 218
+DO  - 10.1177/1471082X18817673
+WE  - Science Citation Index Expanded (SCI-EXPANDED)WE  - Social Science Citation Index (SSCI)AN  - WOS:000514213800004
+N1  - Times Cited in Web of Science Core Collection:  3
+Total Times Cited:  3
+Cited Reference Count:  60
+ER  -
+
+TY  - CPAPER
+AU  - Shvydun, S
+ED  - Cherifi, H
+ED  - Gaito, S
+ED  - Mendes, JF
+ED  - Moro, E
+ED  - Rocha, LM
+TI  - Influence of Countries in the Global Arms Transfers Network: 1950-2018
+T2  - COMPLEX NETWORKS AND THEIR APPLICATIONS VIII, VOL 2
+LA  - English
+CP  - 8th International Conference on Complex Networks and Their Applications (COMPLEX NETWORKS)
+KW  - Arms transfers
+KW  - Influence
+KW  - Multiplex network
+KW  - Dynamic
+KW  - CENTRALITY
+KW  - TRADE
+AB  - Using the SIPRI Arms Transfers Database covering all trade in military equipment over the period 1950-2018, we examine the relationship between countries from a novel empirical perspective. We consider the arms transfers network as a multiplex network where each layer corresponds to a particular armament category. First, we analyze how different layers overlap and elucidate main ties between countries. Second, we consider different patterns of trade in order to identify countries specializing on particular armament categories and analyze how they change their export structure in dynamic. We also examine how countries influence each other at different layers of multiplex network. Finally, we analyze the influence of countries in the whole network.
+AD  - Natl Res Univ Higher Sch Econ, Myasnitskaya Str 20, Moscow 101000, RussiaAD  - Russian Acad Sci, VA Trapeznikov Inst Control Sci, Profsoyuznaya Str 65, Moscow 117342, RussiaC3  - HSE University (National Research University Higher School of Economics)C3  - Russian Academy of SciencesC3  - V.A. Trapeznikov Institute of Control Sciences, Russian Academy of SciencesFU  - Russian Science Foundation [17-18-01651]
+FX  - The article was prepared within the framework of the Basic Research Program at the National Research University Higher School of Economics (HSE) and supported within the framework of a subsidy by the Russian Academic Excellence Project '5-100'. The influence analysis of countries (Sect. 3) was funded by the Russian Science Foundation under grant. 17-18-01651.
+PU  - SPRINGER INTERNATIONAL PUBLISHING AG
+PI  - CHAM
+PA  - GEWERBESTRASSE 11, CHAM, CH-6330, SWITZERLAND
+SN  - 1860-949X
+SN  - 1860-9503
+SN  - 978-3-030-36683-4
+SN  - 978-3-030-36682-7
+J9  - STUD COMPUT INTELL
+PY  - 2020
+VL  - 882
+SP  - 736
+EP  - 748
+DO  - 10.1007/978-3-030-36683-4_59
+WE  - Conference Proceedings Citation Index - Science (CPCI-S)WE  - Conference Proceedings Citation Index - Social Science &amp; Humanities (CPCI-SSH)AN  - WOS:000843839700059
+N1  - Times Cited in Web of Science Core Collection:  1
+Total Times Cited:  1
+Cited Reference Count:  20
+ER  -
+
+TY  - JOUR
+AU  - Fritz, C
+AU  - Lebacher, M
+AU  - Kauermann, G
+TI  - Tempus volat, hora fugit: A survey of tie-oriented dynamic network models in discrete and continuous time
+T2  - STATISTICA NEERLANDICA
+LA  - English
+KW  - continuous-time
+KW  - discrete-time
+KW  - ERGM
+KW  - event modeling
+KW  - random graphs
+KW  - REM
+KW  - STERGM
+KW  - TERGM
+KW  - MAXIMUM-LIKELIHOOD-ESTIMATION
+KW  - RELATIONAL EVENT MODELS
+KW  - RANDOM GRAPH MODELS
+KW  - EXPONENTIAL FAMILY
+KW  - EVOLUTION
+KW  - HETEROGENEITY
+KW  - INVESTIGATE
+KW  - REGRESSION
+KW  - FRAMEWORK
+KW  - FRIEND
+AB  - Given the growing number of available tools for modeling dynamic networks, the choice of a suitable model becomes central. The goal of this survey is to provide an overview of tie-oriented dynamic network models. The survey is focused on introducing binary network models with their corresponding assumptions, advantages, and shortfalls. The models are divided according to generating processes, operating in discrete and continuous time. First, we introduce the temporal exponential random graph model (TERGM) and the separable TERGM (STERGM), both being time-discrete models. These models are then contrasted with continuous process models, focusing on the relational event model (REM). We additionally show how the REM can handle time-clustered observations, that is, continuous-time data observed at discrete time points. Besides the discussion of theoretical properties and fitting procedures, we specifically focus on the application of the models on two networks that represent international arms transfers and email exchange, respectively. The data allow to demonstrate the applicability and interpretation of the network models.
+AD  - Ludwig Maximilians Univ Munchen, Dept Stat, Ludwigstr 33, D-80539 Munich, GermanyC3  - University of MunichFU  - European Cooperation in Science and Technology [COST Action CA15109]; German Research Foundation (DFG) [KA 1188/10-1]; Munich Center for Machine Learning (MCML)
+FX  - European Cooperation in Science and Technology, Grant/Award Number: COST Action CA15109 (COSTNET); German Research Foundation (DFG), Grant/Award Number: KA 1188/10-1; Munich Center for Machine Learning (MCML)
+PU  - WILEY
+PI  - HOBOKEN
+PA  - 111 RIVER ST, HOBOKEN 07030-5774, NJ USA
+SN  - 0039-0402
+SN  - 1467-9574
+J9  - STAT NEERL
+JI  - Stat. Neerl.
+DA  - AUG
+PY  - 2020
+VL  - 74
+IS  - 3
+SP  - 275
+EP  - 299
+DO  - 10.1111/stan.12198
+C6  - NOV 2019
+WE  - Science Citation Index Expanded (SCI-EXPANDED)WE  - Social Science Citation Index (SSCI)AN  - WOS:000499034500001
+N1  - Times Cited in Web of Science Core Collection:  12
+Total Times Cited:  12
+Cited Reference Count:  100
+ER  -
+
+TY  - JOUR
+AU  - Thurner, PW
+AU  - Schmidt, CS
+AU  - Cranmer, SJ
+AU  - Kauermann, G
+TI  - Network Interdependencies and the Evolution of the International Arms Trade
+T2  - JOURNAL OF CONFLICT RESOLUTION
+LA  - English
+KW  - trade interdependence
+KW  - network analysis
+KW  - network structure
+KW  - ERGM
+KW  - arms trade
+KW  - MODELS
+KW  - SPACE
+AB  - Since few states are able to produce all of their own military hardware, a majority of countries' military systems rely on weapon imports. The structure of the international defense technology exchange network remains an important puzzle to understand, along with the factors that drive its evolution. Drawing on a political economy model of arms supply, we propose a new network-oriented explanation for the worldwide transactions of major conventional weapons in the period after World War II. Using temporal exponential random graph models, our dynamic approach illustrates how network dependencies and the relative weighting of economic versus security considerations vary over time. One of our major results is to demonstrate how security considerations started regaining importance over economic ones after 2001. Additionally, our model exhibits strong out-of-sample predictive performance, with network dependencies contributing to model improvement especially after the Cold War.
+AD  - Ludwig Maximilians Univ Munchen, Inst Polit Sci, Oettingenstr 67, D-80538 Munich, GermanyAD  - Penn State Univ, Dept Stat, University Pk, PA 16802 USAAD  - Ohio State Univ, Dept Polit Sci, Columbus, OH 43210 USAAD  - Ludwig Maximilians Univ Munchen, Dept Stat, Munich, GermanyC3  - University of MunichC3  - Pennsylvania Commonwealth System of Higher Education (PCSHE)C3  - Pennsylvania State UniversityC3  - Pennsylvania State University - University ParkC3  - University System of OhioC3  - Ohio State UniversityC3  - University of MunichFU  - German Research Foundation (DFG) [TH 697/9-1, KA 1188/10-1]; National Science Foundation [SES-1357622, SES-1461493, SES-1514750]; Alexander von Humboldt-Stiftung
+FX  - The author(s) disclosed receipt of the following financial support for the research, authorship, and/or publication of this article: Financial support by the German Research Foundation (DFG) under grants TH 697/9-1 and KA 1188/10-1 'International Arms Trade: A Network Approach' is gratefully acknowledged by Paul W. Thurner and Goran Kauermann. Skyler Cranmer was supported by the National Science Foundation (SES-1357622, SES-1461493, and SES-1514750) and by the Alexander von Humboldt-Stiftung.
+PU  - SAGE PUBLICATIONS INC
+PI  - THOUSAND OAKS
+PA  - 2455 TELLER RD, THOUSAND OAKS, CA 91320 USA
+SN  - 0022-0027
+SN  - 1552-8766
+J9  - J CONFLICT RESOLUT
+JI  - J. Confl. Resolut.
+DA  - AUG
+PY  - 2019
+VL  - 63
+IS  - 7
+SP  - 1736
+EP  - 1764
+DO  - 10.1177/0022002718801965
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000474901800007
+N1  - Times Cited in Web of Science Core Collection:  30
+Total Times Cited:  31
+Cited Reference Count:  43
+ER  -
+
+TY  - JOUR
+AU  - Kinne, BJ
+TI  - The Defense Cooperation Agreement Dataset (DCAD)
+T2  - JOURNAL OF CONFLICT RESOLUTION
+LA  - English
+KW  - international cooperation
+KW  - international law
+KW  - military alliance
+KW  - network analysis
+KW  - defense cooperation
+KW  - global security
+KW  - ALLIANCES
+KW  - NETWORKS
+KW  - DEPENDENCIES
+KW  - FORCES
+KW  - MODELS
+KW  - 2-MODE
+KW  - STATES
+KW  - LAW
+AB  - The academic study of defense cooperation focuses heavily on formal military alliances. Yet, governments rarely sign new alliances, and the global alliance structure has remained relatively static for decades. By contrast, governments are increasingly active in defense cooperation agreements (DCAs). These bilateral framework treaties institutionalize their signatories' day-to-day defense relations, facilitating such wide-ranging activities as defense policy coordination, joint research and development, weapons production and arms trade, joint military exercises, training and exchange programs, peacekeeping, and information exchange. Nearly 2,000 DCAs have been signed since 1980. Preliminary evidence suggests that DCAs impact numerous security, military, and defense outcomes and that governments increasingly incorporate DCAs as core elements of their security strategies. This article introduces the new DCA Dataset (DCAD). I provide a brief historical background on DCAs and compare them to other commonly studied forms of defense cooperation. I then explain coding standards and describe the data set in detail. Finally, I illustrate applications of DCAD to militarized interstate disputes and arms trade.
+AD  - Univ Calif Davis, Dept Polit Sci, One Shields Ave, Davis, CA 95616 USAC3  - University of California SystemC3  - University of California DavisFU  - Minerva Research Initiative [W911NF-15-1-0502]
+FX  - The author(s) disclosed receipt of the following financial support for the research and/or authorship of this article: This project was supported in part by Minerva Research Initiative grant #W911NF-15-1-0502.
+PU  - SAGE PUBLICATIONS INC
+PI  - THOUSAND OAKS
+PA  - 2455 TELLER RD, THOUSAND OAKS, CA 91320 USA
+SN  - 0022-0027
+SN  - 1552-8766
+J9  - J CONFLICT RESOLUT
+JI  - J. Confl. Resolut.
+DA  - APR
+PY  - 2020
+VL  - 64
+IS  - 4
+SP  - 729
+EP  - 755
+C7  - 0022002719857796
+DO  - 10.1177/0022002719857796
+C6  - JUL 2019
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000481492300001
+N1  - Times Cited in Web of Science Core Collection:  9
+Total Times Cited:  10
+Cited Reference Count:  68
+ER  -
+
+TY  - JOUR
+AU  - Kinne, BJ
+TI  - Agreeing to arm: Bilateral weapons agreements and the global arms trade
+T2  - JOURNAL OF PEACE RESEARCH
+LA  - English
+KW  - arms trade
+KW  - defense cooperation
+KW  - network analysis
+KW  - proliferation networks
+KW  - MODELS
+AB  - This article assesses the impact of a new form of defense cooperation - formal weapons cooperation agreements, or WCAs - on the global arms trade. WCAs are bilateral framework agreements that establish comprehensive guidelines on the development, production, and exchange of conventional arms. Substantively, WCAs regulate such core areas as procurement and contracting, defense-based research and development, and defense industrial cooperation. These agreements have proliferated dramatically since the mid-1990s. They now number nearly 700, with 30-40 new WCAs signed each year. Newly collected data are used to analyze the effect of WCAs on import and export of conventional weapons. To control for interdependencies in the formation of WCAs, and to account for the mutually endogenous relationship between WCAs and weapons flows, WCAs are modeled as an interdependent network that coevolves with the individual-level arms trade activity of states. The analysis shows that, over the 1995-2010 period, WCAs have significantly increased weapons flows.
+AD  - Univ Calif Davis, Dept Polit Sci, Davis, CA 95616 USAC3  - University of California SystemC3  - University of California DavisPU  - SAGE PUBLICATIONS LTD
+PI  - LONDON
+PA  - 1 OLIVERS YARD, 55 CITY ROAD, LONDON EC1Y 1SP, ENGLAND
+SN  - 0022-3433
+SN  - 1460-3578
+J9  - J PEACE RES
+JI  - J. Peace Res.
+DA  - MAY
+PY  - 2016
+VL  - 53
+IS  - 3
+SP  - 359
+EP  - 377
+DO  - 10.1177/0022343316630037
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000376278800006
+N1  - Times Cited in Web of Science Core Collection:  21
+Total Times Cited:  23
+Cited Reference Count:  49
+ER  -
+
+TY  - JOUR
+AU  - Kinsella, D
+TI  - Illicit arms transfers to Africa and the prominence of the former Soviet bloc: a social network analysis
+T2  - CRIME LAW AND SOCIAL CHANGE
+LA  - English
+KW  - ILLEGAL MARKETS
+KW  - CRIMINAL GROUPS
+KW  - TRADE
+AB  - Small arms and light weapons are the primary causes of death in the violent conflicts raging today. Although the small arms trade is difficult to track, and the illicit trade doubly so, a wealth of information is available. This article applies some basic tools of social network analysis (SNA) to reveal the high profile of former Soviet bloc countries in the illicit arms trade with Africa. I set up this analysis with a discussion of the features of social networks that allow them to facilitate the transfer of illicit weaponry, and follow the presentation of my findings with some explanations for the prominence of Russia and other post-communist countries in this trade. My discussion focuses on the importance of relationships, their quantity and quality, as providing opportunities for, and constraints on, the flow of material and social resources between the actors and locales that comprise the illicit arms trade network. I also highlight the extent to which the positions of key players may account for their power within the network and their roles in security governance, which in the illicit context requires the maintenance of secrecy and redundancy.
+AD  - Portland State Univ, Hatfield Sch Govt, Portland, OR 97201 USAC3  - Portland State UniversityPU  - SPRINGER
+PI  - DORDRECHT
+PA  - VAN GODEWIJCKSTRAAT 30, 3311 GZ DORDRECHT, NETHERLANDS
+SN  - 0925-4994
+SN  - 1573-0751
+J9  - CRIME LAW SOCIAL CH
+JI  - Crime Law Soc. Change
+DA  - DEC
+PY  - 2014
+VL  - 62
+IS  - 5
+SP  - 523
+EP  - 547
+DO  - 10.1007/s10611-014-9531-9
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000346244700001
+N1  - Times Cited in Web of Science Core Collection:  3
+Total Times Cited:  4
+Cited Reference Count:  90
+ER  -
+
+TY  - JOUR
+AU  - Akerman, A
+AU  - Seim, AL
+TI  - The global arms trade network 1950-2007
+T2  - JOURNAL OF COMPARATIVE ECONOMICS
+LA  - English
+KW  - Arms trade
+KW  - Network formation
+KW  - Polity
+KW  - Cold War
+KW  - ECONOMICS
+KW  - ALLIANCES
+KW  - WELFARE
+KW  - RACES
+KW  - WAR
+AB  - Using SIPRI data on all international transfers of major conventional weapons 1950-2007, we study the relationship between differences in polity and arms trade. To study whether states tend to trade arms within their political vicinity we estimate gravity models of the likelihood of trade at the bilateral level and study the evolution of the global network over time. We find a stable negative relationship between differences in polity and the likelihood of arms trade for the duration of the Cold War, but not in recent years. In line with these results, the global arms trade network changes drastically over the sample period in several respects: it grows more dense, clustered and decentralized over time. The differences between the NATO and Warsaw Pact sub-networks that we find corroborate the common perception that the Warsaw Pact was more strongly centralized around the USSR than NATO around the UK, the US and France. Journal of Comparative Economics 42 (3) (2014) 535-551. Stockholm University, SE-106 91 Stockholm, Sweden. (C) 2014 Association for Comparative Economic Studies Published by Elsevier Inc. All rights reserved.
+AD  - Stockholm Univ, SE-10691 Stockholm, SwedenC3  - CIVISC3  - Stockholm UniversityPU  - ACADEMIC PRESS INC ELSEVIER SCIENCE
+PI  - SAN DIEGO
+PA  - 525 B ST, STE 1900, SAN DIEGO, CA 92101-4495 USA
+SN  - 0147-5967
+SN  - 1095-7227
+J9  - J COMP ECON
+JI  - J. Comp. Econ.
+DA  - AUG
+PY  - 2014
+VL  - 42
+IS  - 3
+SP  - 535
+EP  - 551
+DO  - 10.1016/j.jce.2014.03.001
+WE  - Social Science Citation Index (SSCI)AN  - WOS:000342547800003
+N1  - Times Cited in Web of Science Core Collection:  52
+Total Times Cited:  56
+Cited Reference Count:  24
+ER  -
+
+TY  - JOUR
+AU  - Crooks, A
+AU  - Masad, D
+AU  - Croitoru, A
+AU  - Cotnoir, A
+AU  - Stefanidis, A
+AU  - Radzikowski, J
+TI  - International Relations: State-Driven and Citizen-Driven Networks
+T2  - SOCIAL SCIENCE COMPUTER REVIEW
+LA  - English
+KW  - social network analysis
+KW  - international networks
+KW  - international relations
+KW  - social media
+KW  - SOCIAL MEDIA
+KW  - TWITTER
+KW  - BOUNDARIES
+KW  - SYSTEM
+AB  - The international community can be viewed as a set of networks manifested through various transnational activities. The availability of longitudinal data sets such as international arms trades and United Nations General Assembly (UNGA) allows for the study of state-driven interactions over time. In parallel to this top-down approach, the recent emergence of social media is fostering a bottom-up and citizen-driven avenue for international relations (IRs). The comparison of these two network types offers a new lens to study the alignment between states and their people. This article presents a network-driven approach to analyze communities as they are established through different forms of bottom-up (e.g., Twitter) and top-down (e.g., UNGA voting records and international arms trade records) IRs. By constructing and comparing different network communities, we were able to evaluate the similarities between state-driven and citizen-driven networks. In order to validate our approach we identified communities in UNGA voting records during and after the Cold War. Our approach showed that the similarity between UNGA communities during and after the Cold War was 0.55 and 0.81, respectively (in a 0-1 scale). To explore the state- versus citizen-driven interactions, we focused on the recent events in Syria within Twitter over a sample period of 1 month. The analysis of these data show a clear misalignment (0.25) between citizen-formed international networks and the ones established by the Syrian government (e.g., through its UNGA voting patterns).
+AD  - George Mason Univ, Krasnow Inst Adv Study, Dept Computt Social Sci, Fairfax, VA 22030 USAAD  - George Mason Univ, Dept Geog & Geoinformaiton Sci, Fairfax, VA USAC3  - George Mason UniversityC3  - George Mason UniversityPU  - SAGE PUBLICATIONS INC
+PI  - THOUSAND OAKS
+PA  - 2455 TELLER RD, THOUSAND OAKS, CA 91320 USA
+SN  - 0894-4393
+SN  - 1552-8286
+J9  - SOC SCI COMPUT REV
+JI  - Soc. Sci. Comput. Rev.
+DA  - APR
+PY  - 2014
+VL  - 32
+IS  - 2
+SP  - 205
+EP  - 220
+DO  - 10.1177/0894439313506851
+WE  - Science Citation Index Expanded (SCI-EXPANDED)WE  - Social Science Citation Index (SSCI)AN  - WOS:000333645600008
+N1  - Times Cited in Web of Science Core Collection:  9
+Total Times Cited:  9
+Cited Reference Count:  44
+ER  -
+
