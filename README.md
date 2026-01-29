@@ -1,2 +1,4 @@
 # TERGM_global_arms_trade_1993-2023
-The International Arms Transfers Network 1993-2023: A Sequence of Temporal Exponential Random Graph Models
+
+Modelling the post-Cold War network of international major conventional weapons transfers using SIPRI data.
+Code files accompanying the paper "The International Arms Transfers Network 1993-2023: A Sequence of Temporal Exponential Random Graph Models", QN Nguyen 2025.
