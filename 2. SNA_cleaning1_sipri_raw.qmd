@@ -1,0 +1,1211 @@
+---
+title: "INTERNATIONAL ARMS TRADE NETWORKS: DATA CLEANING I (process SIPRI raw data)"
+author: "QN Nguyen"
+date: "`r Sys.Date()`"
+format:
+  html:
+    theme: cosmo
+    highlight-style: tango
+    toc: true
+    toc-depth: 2
+    toc-float: true
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# SETTINGS
+
+```{r}
+knitr::opts_chunk$set(
+  fig.width = 12,
+  fig.height = 10,
+  fig.path = "Figs/",
+  fig.align = "center",
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  include = TRUE
+)
+
+options(
+  xtable.comment = FALSE,
+  scipen = 9999,
+  tinytex.verbose = TRUE
+)
+```
+
+
+```{r}
+pacman::p_load(tidyverse, ggplot2, dplyr, devtools, haven, vtable, foreign, forcats, summarytools, ggcorrplot, qgraph, sjmisc, psych, utils, scales, stats, graphics)
+```
+
+# OUTPUT
+
+**Notes**
+- sipri = delivery-level:  subset of sipri data on delivery-year-level of analysis
+- sipri1 = delivery-level: first cleaning, i.e. excluding NAs, non-state-actors and unknowns
+- sipri2 = delivery & order (i.e. deal) & year-level: sipri1 data on delivery-year-level of analysis plus variables aggregated to delivery-order-level of analysis --> I'll work with this dataset to analyse the international arms transfer (IAT) network moving forward
+- sipri3 = only order (i.e. deal) level: only data aggregated to delivery-order-level of analysis
+- sipri4 = only year-level
+```{r}
+# load("sipri.RData")
+# load("sipri1.RData")
+# load("sipri1.general.RData") # not in use
+# load("sipri2.RData")
+# load("sipri3.RData")
+```
+
+
+# 1. Data Import
+
+```{r}
+## OLD DATA
+# library(utils)
+# sipri <- read.csv("data/AT_1950-2023_data/00_SIPRI_1950_2023_1.txt", header=T, sep=";",dec=".") # n = 57901, 18 vbls
+
+# head(sipri, 10)
+```
+
+```{r}
+## NEW DATA
+sipri <- read.csv("data/AT_1950-2023_data/trade-register_1950_2023.csv", sep=",", header = T, check.names = F)
+```
+
+
+Deals with deliveries or orders made for year 1950-2023
+
+-   A "?" in a column indicates uncertain data. 
+-   The 'Number delivered' and the 'Year(s) of deliveries' refer only to deliveries in the selected year(s). 
+-   An empty field for 'Number ordered' indicates that data is not yet available. 
+-   SIPRI trend-indicator values (TIVs) are in millions. 
+-   An empty field for 'SIPRI TIV for total order' indicates that data (on the number ordered and/or the TIV per unit) is not available. 
+-   A '0' for 'SIPRI TIV of delivered weapons' indicates that the volume of deliveries is between 0 and 0.5 million SIPRI TIV
+-   An empty field indicates that no deliveries have been identified. 
+-   Figures may not add up to stated totals due to the conventions of rounding. 
+-   For the method used for the SIPRI TIV and explanations of the conventions; abbreviations and acronyms see: https://www.sipri.org/databases/armstransfers/sources-and-methods>.
+
+
+
+# 2. SIPRI 0: Raw data = on transfer-level
+
+## General cleaning operations
+
+-   tiv_unit = the TIV for one unit of this weapon, in general
+-   tiv_order = TIV for one unit of this weapon but considering its condition agreed up on in the specific contract/order = calculated as i.e. **'SIPRI tiv estimate' x status modifier (1, 0.66, 0.4)**
+-   tiv_delivery =  TIV for one unit of of this weapon in this specific delivery, i.e. considering the number of units delivered and the weapons’ condition = calculated as **'SIPRI tiv estimate' x 'numbers delivered' x status modifier (1, 0.66, 0.4)**
+
+```{r}
+# load("sipri.RData")
+```
+
+```{r}
+names(sipri)
+sipri <- sipri %>%
+  select(-c(`Order date is estimate`,`Numbers delivered is estimate`,`Delivery year is estimate`)) %>% 
+  # simplify/harmonize vbl names
+  rename(order_id = `SIPRI AT Database ID`,
+         supplier = Supplier,
+         recipient = Recipient,
+         weapon_designation = Designation,
+         weapon_description = Description,
+         weapon_category = `Armament category`,
+         # comments = Comments,
+         year_order = `Order date`,
+         # est1 = `Order date is estimate`,
+         year_delivery = `Delivery year`,
+         # units_ordered = `Number ordered`,
+         units_delivered = `Numbers delivered`,
+         status = Status,
+         tiv_unit = `SIPRI estimate`, # the TIV for one unit of this weapon, in general
+         tiv_order = `TIV deal unit`, # TIV for one unit of this weapon, but considering its condition specified in the order = calculated as tiv_unit x status modifier (1, 0.66, 0.4)
+         tiv_delivery = `TIV delivery values`, # TIV of the total delivery, i.e. considering the number of units delivered and the weapons’ condition, calculated as 'tiv_unit' x 'units_delivered' x status modifier (1, 0.66, 0.4)
+         local_production = `Local production`) %>% # yes/no 
+    # compute variable(s)
+        # status modifier: 1 = 'new', 0.66 = 'second hand but modernized', 0.4 = 'second hand'
+  mutate(status_n = case_when(status == "New"                            ~ 1,  
+                              status == "Second hand but modernized"     ~ 0.66,
+                              status == "Second hand"                    ~ 0.4),
+         local_production_n = ifelse(local_production == "No", 0, 1)) %>% 
+  select(supplier,recipient,
+         weapon_category,weapon_description,weapon_designation,
+         year_order,year_delivery,
+         # units_ordered,
+         units_delivered,
+         status,status_n,
+         tiv_unit,tiv_order,tiv_delivery,
+         everything())
+  # exlude NAs
+  # na.omit()
+
+# head(sipri, 10)
+```
+
+## Data types: factorise/numerise
+```{r}
+## OLD CODE, DO NOT USE: assign the right type to each variable
+# str(sipri)
+# names(sipri)
+
+# sipri <- sipri %>%
+#   mutate(supplier = as.factor(supplier),
+#          recipient = as.factor(recipient),
+#          weapon_category = as.factor(weapon_category),
+#          weapon_designation = as.factor(weapon_designation),
+#          weapon_description = as.factor(weapon_description),
+#          status = as.factor(status),
+#          local_production = as.factor(local_production))
+#          # local_production_n = as.numeric(local_production_n))
+#   # mutate_at(c(6:38), as.numeric)
+```
+
+
+## Labels
+```{r}
+# add vbl labels
+# library(Hmisc)
+# names(sipri)
+
+label(sipri[["order_id"]]) <- "unique ID for each iat order"
+label(sipri[["supplier"]]) <- "arms exporter"
+label(sipri[["recipient"]]) <- "arms importer"
+
+label(sipri[["weapon_category"]]) <- "type of major weapon"
+label(sipri[["weapon_description"]]) <- "weapon sub-category"
+label(sipri[["weapon_designation"]]) <- "weapon model name"
+
+label(sipri[["year_order"]]) <- "order year"
+label(sipri[["year_delivery"]]) <- "delivery year"
+
+label(sipri[["units_delivered"]]) <- "number delivered"
+label(sipri[["status"]]) <- "weapons' condition (new, second-hand modernized, second-hand outdated"
+label(sipri[["status_n"]]) <- "weapons' condition modifier: new = 1, sh modernized = 0.66, sh outdated = 0.4"
+
+label(sipri[["tiv_unit"]]) <- "tiv (in million) of the weapon unit"
+label(sipri[["tiv_order"]]) <- "tiv (in million) of tiv_unit X status_n = tiv of one weapon unit considering the weapons' condition"
+label(sipri[["tiv_delivery"]]) <- "tiv (in million) of tiv_unit X status_n X units_delivered = tiv of the total delivery considering the weapons' condition and number of units delivered"
+
+# label(sipri) # check labels
+```
+
+
+## Check NAs
+
+```{r}
+sapply(sipri, function(x) sum(is.na(x))) # NAs 
+sapply(sipri, function(x) sum(is.nan(x))) # NaNs
+sapply(sipri, function(x) sum(is.infinite(x))) # Inf
+# seems like SIPRI cleaned the data perfectly, no NAs, NaNs or Inf values
+```
+
+
+
+## Descriptive overview
+
+### n suppliers & recipients
+```{r}
+## recipients = 261
+sipri %>% 
+  select(recipient) %>% 
+  unique() %>% 
+  arrange()
+
+## suppliers = 136
+sipri %>% 
+  select(supplier) %>% 
+  unique() %>% 
+  arrange()
+```
+
+
+### n deliveries & orders
+```{r}
+### deliveries: how many in total in 2003? = 668
+sipri %>% 
+  filter(year_delivery == 2003)
+
+### orders: how many in total in 2003? = 741
+sipri %>% 
+  filter(year_order == 2003)
+```
+
+
+```{r}
+### what about 20 years later, in 2023? --> deliveries = 1021, orders = 474
+sipri %>% 
+  filter(year_delivery == 2023) 
+sipri %>% 
+  filter(year_order == 2023) 
+```
+
+
+### n orders/contracts, e.g. between Germany & USA
+```{r}
+## e.g. between Germany & US = 82 orders since 1950
+sipri %>% 
+  filter(supplier == "Germany" & recipient == "United States") %>% 
+  arrange(supplier, recipient, order_id)
+```
+
+
+### weapon types
+```{r}
+
+# categories = 11
+sipri %>% 
+  pull(weapon_category) %>% 
+  unique()
+# sipri$weapon_category %>% 
+# unique()
+
+# occurrences = aircrafts and missiles are by far the most popular produces
+sipri %>%
+  group_by(weapon_category) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+```
+
+
+
+### Examples
+
+#### Germany's exports
+```{r}
+### n exports from Germany
+
+## in 2002 = 43
+sipri %>% 
+  filter(supplier == "Germany" & year_delivery == 2002) %>% 
+  arrange(supplier, recipient)
+
+## in 2012 = 55
+sipri %>% 
+  filter(supplier == "Germany" & year_delivery == 2012) %>% 
+  arrange(supplier, recipient)
+
+## in 2023 = 67
+sipri %>% 
+  filter(supplier == "Germany" & year_delivery == 2023) %>% 
+  arrange(supplier, recipient)
+```
+
+```{r}
+# how many Leopard-2A7 and to whom has Germany transfered sofar?
+sipri %>% 
+  filter(supplier == "Germany" & weapon_category == "Armoured vehicles" & weapon_designation == "Leopard-2A7") %>% 
+  select(recipient, weapon_category, weapon_designation, weapon_description, year_delivery, units_delivered) %>% 
+  unique() %>% 
+  kbl %>% 
+  kable_classic()
+```
+
+```{r}
+# what type of major arms does Germany sell the most? = engines, tanks and aircrafts
+sipri %>% 
+  filter(supplier == "Germany") %>% 
+  group_by(weapon_category) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
+```
+
+```{r}
+# library(forcats)
+# most popular weapon models from Germany = ship & vehicle engines
+sipri %>% 
+  filter(supplier == "Germany") %>% 
+  mutate(weapon_designation = fct_relevel(weapon_designation, sort(levels(weapon_designation)))) %>% 
+  group_by(weapon_designation) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
+```
+
+
+
+#### Sales of Aircrafts & Missiles
+
+AIRCRAFTS
+```{r}
+# 1058 aircraft models
+sipri %>%
+  filter(weapon_category == "Aircraft") %>% 
+  select(weapon_designation) %>%
+  unique()
+
+```
+
+```{r}
+# which countries sold aircrafts the most between 1993-2023?
+# = US, followed by Russia, France, Germany, and China
+sipri %>%
+  filter(weapon_category =="Aircraft" & year_delivery >=1993) %>% 
+  group_by(supplier) %>% # recipient, year_delivery, year_delivery, weapon_designation, tiv_unit, status, units_delivered
+  summarise(sold = sum(units_delivered)) %>% # supplier = unique(supplier),
+            
+  # summarise(supplier = paste(unique(supplier), collapse = ","),
+  #           recipient = paste(unique(recipient), collapse = ","),
+  #           year_delivery = mean(year_delivery),
+  #           weapon_category = paste(unique(weapon_category), collapse = ","),
+  #           weapon_designation = paste(unique(weapon_designation), collapse = ","),
+  #           tiv_unit = mean(tiv_unit, na.rm=T),
+  #           status = paste(unique(status), collapse = ",")
+  #           ) %>%
+  # unique() %>%
+  arrange(desc(sold)) # %>% weapon_designation, year_delivery, supplier, recipient
+# ungroup() 
+```
+
+
+MISSILES
+```{r}
+# 451 missile models existing
+sipri %>%
+  filter(weapon_category == "Missiles") %>% 
+  select(weapon_designation) %>%
+  unique()
+```
+
+```{r}
+# which countries sold missiles the most between 1993-2023?
+# = US, followed by Russia, France, Germany, and China
+sipri %>%
+  filter(weapon_category =="Missiles" & year_delivery >=1993) %>% 
+  group_by(supplier) %>% # recipient, year_delivery, year_delivery, weapon_designation, tiv_unit, status, units_delivered
+  summarise(sold = sum(units_delivered)) %>% # supplier = unique(supplier),
+            
+  # summarise(supplier = paste(unique(supplier), collapse = ","),
+  #           recipient = paste(unique(recipient), collapse = ","),
+  #           year_delivery = mean(year_delivery),
+  #           weapon_category = paste(unique(weapon_category), collapse = ","),
+  #           weapon_designation = paste(unique(weapon_designation), collapse = ","),
+  #           tiv_unit = mean(tiv_unit, na.rm=T),
+  #           status = paste(unique(status), collapse = ",")
+  #           ) %>%
+  # unique() %>%
+  arrange(desc(sold)) # %>% weapon_designation, year_delivery, supplier, recipient
+# ungroup() 
+```
+
+
+
+#### Eurofighters
+
+```{r}
+library(magrittr)
+library(dplyr)
+library(stringr)
+# 19 transfers of Eurofighters
+sipri %>%
+  filter(weapon_category =="Aircraft") %>% 
+  select(supplier, recipient, year_order, year_delivery, weapon_designation, tiv_unit, units_delivered) %>%
+  filter(str_detect(weapon_designation, "Typhoon")) %>% 
+  View()
+
+```
+
+```{r}
+# Eurofighters mostly sold by UK, followed by Germany and Italy
+sipri %>%
+  filter(weapon_category =="Aircraft") %>%
+  select(supplier, recipient, year_delivery, year_order, weapon_designation, tiv_unit, units_delivered) %>%
+  filter(str_detect(weapon_designation, "Typhoon")) %>%
+  group_by(supplier, weapon_designation) %>% 
+  summarise(years_ord = paste(year_order, collapse = ", "),
+            years_del = paste(year_delivery, collapse = ", "),
+            tiv = sum(tiv_unit), 
+            sold = sum(units_delivered)) %>% 
+  arrange(desc(sold)) %>% 
+  View()
+```
+
+
+
+## Save 0
+```{r}
+# CSV
+# library(readr)
+# write_csv(sipri, "sipri_workingfile.csv") # save
+# sipri <- read_csv("sipri_workingfile.csv") # call
+
+# Rdata
+# save(sipri, file = "sipri.RData") # as R data file
+# load("sipri.RData") # call
+```
+
+
+
+# 3. SIPRI 1: Exclude non state actors (nsas) and unknown parties
+
+Sipri flags non-state actors with "\*" for rebel forces and "\*\*" for supranational institutions. We can use this to identify nsas:
+
+```{r}
+# nsa = non-state actors
+# all arms suppliers & recipients combined = 60 non state actors between 1950-2023
+nsa <- c(sipri$recipient, sipri$supplier) %>%
+  grep("\\*", ., value = TRUE) %>%
+  unique()
+print(nsa)
+```
+
+```{r}
+## identify nsas involved in arms trading
+
+# n = 59 of nsas have bought weapons previously
+nsa_recipient <- sipri$recipient %>%
+  grep("\\*", ., value = TRUE) %>%  # Filter values containing "*"
+  unique()  %>%                     # Get unique values containing "*" only once
+  print()
+
+# n = 5 of nsas have sold weapons previously
+nsa_supplier <- sipri$supplier %>%
+  grep("\\*", ., value = TRUE) %>%  
+  unique()  %>%                     
+  print()
+
+# --> it's no surprise that non-state actors are more likely to be recipients than suppliers
+```
+
+```{r}
+## identify supranational institutions involved in arms trading
+
+# how many nsas involved in trading are supranational institutions? 
+# --> 6/60 = 10% of nsas are supra institutions
+nsa_supra <- c(nsa_recipient, nsa_supplier) %>%
+  grep("\\*\\*", ., value = TRUE) %>% 
+  unique() %>% 
+  print()
+
+# how many nsas involved in trading are rebel forces? 
+# -> 54/60 = 90% of nsas are rebel forces
+nsa_rebel <- c(nsa_recipient, nsa_supplier) %>%
+  grep(".*\\*$", ., value = TRUE) %>%  # Filter values with one "*"
+  grep(".*\\*\\*$", ., value = TRUE, invert = TRUE) %>%  # Exclude values with two "*"
+  unique() %>% 
+  print()
+```
+
+```{r}
+## another way of compiling the nsa list
+# nsa <- union(nsa_recipient,nsa_supplier) # Combined unique values
+```
+
+Now exclude the cases involving unknowns or with nsas that were just identified
+```{r}
+# sipri1 <- read_csv("sipri1_workingfile.csv") # call
+sipri1 <- sipri %>%
+  filter(!(supplier %in% nsa | 
+            recipient %in% nsa |                # exclude nsas 
+            recipient=="unknown recipient(s)" | # exclude unknown recipient(s)...
+            supplier=="unknown supplier(s)")) # ...& unknown supplier(s)
+
+# head(sipri1, 10)
+# n = 58345
+```
+@nga: --> >800 entries excluded.
+
+SIPRI1: n = 58345 transfers in total
+
+
+## Save 1
+```{r}
+# CSV
+# library(readr)
+# write_csv(sipri1, "sipri1_workingfile.csv") # save
+# sipri1 <- read_csv("sipri1_workingfile.csv") # call
+
+# Rdata
+# save(sipri1, file = "sipri1.RData") # as R data file
+# load("sipri1.RData") # call
+```
+
+
+
+
+# 4. SIPRI 2: Complete = delivery (raw) + order + year-level data
+
+orders n = 27394 orders
+```{r}
+# currently have 58345 arms deliveries between 1950-2023
+# how many distinct orders? --> n = 27394 orders in total
+sipri1 %>% 
+  group_by(order_id) %>% 
+  count()
+```
+
+```{r}
+# Verify that same order_ids consistently belong to the same suppliers, recipients and maybe also the weapon_category of the weapons transfered?
+sipri1 %>%
+  select(order_id, recipient, supplier, weapon_category) %>% 
+  group_by(order_id) %>%                   # group by order
+  summarise_all(list(~n_distinct(.))) %>%  # for each order_id group, count number of distinct values in each of the previously selected columns 
+  filter_at(vars(-order_id), any_vars(. != 1)) # filter for cases where there are more than 1 distinct value in each of the selected columns, except for column order_id itself
+
+```
+--> no cases with more than one distinct recipient, supplier and arms weapon_category. It seems that recipients, suppliers and arms weapon_category remain the same throughout all deliveries of the same order, which makes sense.
+
+
+```{r}
+# How many arms transfer orders were delivered over a period of more than one year? 
+sipri1 %>%
+  select(order_id,year_delivery) %>% 
+  group_by(order_id) %>%                    # group by order
+  summarise_all(list(~n_distinct(.))) %>%  # for each order_id group, count number of distinct delivery years
+  filter_at(vars(-order_id), any_vars(. != 1)) # filter for cases where weapons were delivered over more than 1 specific year
+```
+-> for 12832 orders, arms deliveries were spread out over several years, e.g. for order 29, there are 12 distinct delivery years. Let's see who the involved parties were. 
+
+```{r}
+sipri1 %>% filter(order_id == 29) # over the period of 1971-1983 (i.e. for 12 years), Italy transfered aircrafts to Brazil every single year 
+```
+
+After making sure only one supplier and one recipient were involved in each international arms transfer order, proceed to group deliveries within the same order together. Assign each order the year when the first delivery was carried out. Sum up the tivs of all deliveries belonging to the same order.
+
+
+## 4.1. Order-level statistics
+
+```{r}
+names(sipri1)
+
+# MAKE A COPIE
+sipri2 <- sipri1
+```
+
+### Check data before adding order-level variables
+```{r}
+# check data before adding order-level data, example = order number 29
+sipri2 %>% 
+  filter(order_id == 29)# 12 deliveries from the same order, where tiv_delivery will be aggregated by order
+```
+
+
+### Create order-level variables
+
+```{r}
+# library(stats)
+# library(graphics)
+# names(sipri1)
+
+# concacenate information of individual transfers belonging to an order
+sipri2 <- sipri2 %>%
+  group_by(order_id) %>% 
+  arrange(year_delivery) %>% 
+  mutate(order_years_deliveries = paste(year_delivery, collapse = ", "),
+         order_all_units_delivered = paste(units_delivered, collapse = ", "),
+         order_all_tiv_delivered = paste(tiv_delivery, collapse = ", ")) %>%
+  ungroup()
+
+# identify first delivery year for each order and assign this value to new vbl order_year_del1
+sipri2$order_year_del1 <- ave(sipri2$year_delivery, sipri2$order_id, FUN=min)
+
+# calculate time from order to first delivery of the order and assign value to new vbl order_duration_del1
+sipri2$order_duration_del1 <- (sipri2$order_year_del1 - sipri2$year_order)
+
+# duration (in years) to finish all deliveries of a specific order
+sipri2$order_duration_finish <- ave(sipri2$tiv_delivery, sipri2$order_id, FUN=length) 
+
+# all units ever delivered as part of the same order
+sipri2$order_units_total <- ave(sipri2$units_delivered, sipri2$order_id, FUN=sum) 
+
+# sum of tivs for all deliveries ever carried out as part of the same order and assign value to new vbl order_tiv_total
+sipri2$order_tiv_total <- ave(sipri2$tiv_delivery, sipri2$order_id, FUN=sum) 
+
+# average tiv of a delivery by specific order
+sipri2$order_tiv_mean <- ave(sipri2$tiv_delivery, sipri2$order_id, FUN=mean) 
+
+```
+
+VERSION 2
+```{r}
+# don't run. this code takes too much time running.
+# sipri2 <- sipri2 %>%
+#   group_by(order_id) %>%
+#   mutate(order_year_del1 = min(year_delivery),
+#          order_duration_del1 = (order_year_del1 - year_order),
+#          order_duration_del1 = (order_year_del1 - year_order),
+#          order_tiv_total = sum(tiv_delivery),
+#          order_units_total = sum(units_delivered),
+#          order_duration_finish = n(tiv_delivery),
+#          order_tiv_mean = mean(tiv_delivery),
+#          order_tiv_sd = sd(tiv_delivery)) %>%
+#   ungroup()
+```
+
+
+
+### Check data after adding order-level variables
+
+```{r}
+# check data after adding order_year_del1 variable, example = Ger --> USA in 2015
+sipri2 %>% 
+  filter(order_id == 29) %>%
+  arrange(year_delivery) %>% 
+  View()
+
+# e.g. France --> Syria, order 66782
+sipri2 %>% 
+  filter(order_id == 	66782) %>%
+  arrange(year_delivery) %>% 
+  View()
+
+# ! WHEN THE WEAPON IS SECOND HAND; tiv_unit and tiv_order are different 
+# e.g. USSR --> N.Korea
+sipri2 %>% 
+  filter(order_id == 	16905) %>%
+  arrange(year_delivery) %>% 
+  View()
+
+```
+
+
+### Add time periods variables
+
+Add a timeline variable highlighting the prevalent geopolitical context of arms deliveries. Created with tensions among major powers in mind. For definition of "major power", refer to literature, XXX e.g. ?
+
+
+Orders
+```{r}
+library(sjmisc)
+sipri2 %>% 
+  filter(year_order <= 1949) %>% 
+  frq(year_order) # first orders in 1940
+```
+
+```{r}
+# for orders
+sipri2 <- sipri2 %>% 
+  mutate(
+    # geopolitical context in which order was placed
+    order_geopol_ord = ifelse(year_order <= 1991, "Cold War",
+                    ifelse(year_order <= 2000, "post-Cold War",
+                           ifelse(year_order <= 2013, "post-9/11",
+                                  ifelse(year_order <= 2023, "post-Crimea"
+                                                )))),
+    # decade in which order was placed
+    order_decade_ord = ifelse(year_order <= 1949, "1940s",
+                    ifelse(year_order <= 1959, "1950s",
+                        ifelse(year_order <= 1969, "1960s",
+                            ifelse(year_order <= 1979, "1970s",
+                               ifelse(year_order <= 1989, "1980s",
+                                  ifelse(year_order <= 1999, "1990s",
+                                      ifelse(year_order <= 2000, "2000s",
+                                          ifelse(year_order <= 2023, "2010-23"
+                                                                     )))))))))
+```
+
+
+Deliveries
+```{r}
+library(sjmisc)
+sipri2 %>% 
+  filter(year_delivery <= 1955) %>% 
+  frq(year_delivery) # first deliveries in 1950
+```
+
+```{r}
+# for year_deliveryly deliveries
+sipri2 <- sipri2 %>% 
+  mutate(
+    # geopolitical context in which delivery was carried out
+    order_geopol_del = ifelse(year_delivery <= 1991, "Cold War",
+                        ifelse(year_delivery <= 2000, "post-Cold War",
+                               ifelse(year_delivery <= 2013, "post-9/11",
+                                      ifelse(year_delivery <= 2023, "post-Crimea"
+                                      )))),
+    # decade in which delivery was carried out
+    order_decade_del = ifelse(year_delivery <= 1959, "1950s",
+                        ifelse(year_delivery <= 1969, "1960s",
+                               ifelse(year_delivery <= 1979, "1970s",
+                                      ifelse(year_delivery <= 1989, "1980s",
+                                             ifelse(year_delivery <= 1999, "1990s",
+                                                    ifelse(year_delivery <= 2000, "2000s",
+                                                           ifelse(year_delivery <= 2023, "2010-23"
+                                                           ))))))))
+```
+
+
+First deliveries
+```{r}
+# for first deliveries
+sipri2 <- sipri2 %>% 
+  mutate(
+    order_geopol_del1 = ifelse(order_year_del1 <= 1991, "Cold War",
+                         ifelse(order_year_del1 <= 2000, "post-Cold War",
+                                ifelse(order_year_del1 <= 2013, "post-9/11",
+                                       ifelse(order_year_del1 <= 2023, "post-Crimea"
+                                       )))),
+    order_decade_del1 = ifelse(order_year_del1 <= 1959, "1950s",
+                         ifelse(order_year_del1 <= 1969, "1960s",
+                                ifelse(order_year_del1 <= 1979, "1970s",
+                                       ifelse(order_year_del1 <= 1989, "1980s",
+                                              ifelse(order_year_del1 <= 1999, "1990s",
+                                                     ifelse(order_year_del1 <= 2000, "2000s",
+                                                            ifelse(order_year_del1 <= 2023, "2010-23"
+                                                            ))))))))
+
+```
+
+Check again
+```{r}
+# check all newly added order-level variables, example = order number 29
+sipri2 %>% 
+  filter(order_id == 29) %>% # 12 deliveries from the same order, where tiv_delivery was aggregated by order
+  arrange(year_delivery) %>% 
+  View()
+```
+
+
+
+### Labels
+
+```{r}
+## order-level
+label(sipri2[["order_year_del1"]]) <- "year of first delivery after the order/deal"
+
+label(sipri2[["order_years_deliveries"]]) <- "list of all delivery years in the given order"
+label(sipri2[["order_all_units_delivered"]]) <- "list of all units transfered in the given order"
+label(sipri2[["order_all_tiv_delivered"]]) <- "list of tivs of all transfers in the given order"
+
+label(sipri2[["order_duration_del1"]]) <- "time in between the given order and first delivery"
+label(sipri2[["order_duration"]]) <- "duration (in years) to finish all deliveries of a given order"
+
+label(sipri2[["order_geopol_ord"]]) <- "geopolitical epoch when ordered"
+label(sipri2[["order_decade_ord"]]) <- "decade when ordered"
+label(sipri2[["order_geopol_del"]]) <- "geopolitical epoch when delivered"
+label(sipri2[["order_decade_del"]]) <- "decade when delivered"
+label(sipri2[["order_geopol_del1"]]) <- "geopolitical epoch when first delivery of order occured"
+label(sipri2[["order_decade_del1"]]) <- "decade when first delivery of order occured"
+
+label(sipri2[["order_units_total"]]) <- "sum of all weapon units ever delivered in the given order"
+
+label(sipri2[["order_tiv_total"]]) <- "sum of all delivery tivs in the given order"
+label(sipri2[["order_tiv_mean"]]) <- "tiv averaged over all deliveries in a given order"
+# label(sipri2[["order_tiv_sd"]]) <- "standard deviation of average tiv (of a delivery by specific order)"
+
+# label(sipri2) # check labels
+```
+
+
+
+
+## 4.2. Year-level statistics
+
+```{r}
+# sipri2a <- sipri2
+# sipri2 <- sipri2a # USE THIS
+```
+
+
+### Check data before adding year-level variables
+```{r}
+# check data before adding year-level data, example = Ger --> USA in 2015
+sipri1 %>% 
+  filter(supplier == "Germany" & recipient == "United States" & year_delivery == 2015) # 4 deliveries from the same year. We will aggregate these tiv_delivery values by year
+```
+
+### Create year-level variables
+```{r}
+sipri2 <- sipri2 %>%
+  group_by(year_delivery, supplier, recipient) %>%
+  mutate(
+      ## list of stats
+         year_order_ids = paste(order_id, collapse = ", "),
+         year_weapon_categories = paste(weapon_category, collapse = ", "),
+         year_weapon_descriptions = paste(weapon_description, collapse = ", "),
+         year_weapon_designation = paste(weapon_designation, collapse = ", "),
+         year_order_years = paste(year_order, collapse = ", "),
+         year_units_delivered = paste(units_delivered, collapse = ", "),
+         # year_status = paste(status, collapse = ", "),
+         year_tiv_units = paste(tiv_unit, collapse = ", "),
+         # year_local_production = paste(local_production, collapse = ", "),
+         year_tiv_orders = paste(tiv_order, collapse = ", "),
+         year_tiv_deliveries = paste(tiv_delivery, collapse = ", "),
+         year_tiv_total = sum(tiv_delivery),
+         year_tiv_mean = mean(tiv_delivery),
+         year_delivery_count = n()) %>% # DV: tiv of arms from a supplier to a recipient in a given year
+  ungroup()
+```
+
+
+### Check data after adding year_order_ids variables
+```{r}
+# library(stats)
+# library(graphics)
+
+# check dependent variable tiv of all deliveries from one year added together. For Germany-US = 4 deliveries from the same year, where tiv for individual deliveries are aggregated by year
+sipri2 %>% 
+  filter(supplier == "Germany" & recipient == "United States" & year_delivery == 2015) %>%
+  select(supplier, recipient, year_delivery, order_id, year_order_ids:last_col()) %>%
+  View()
+
+sipri2 %>% 
+  filter(supplier == "Germany" & recipient == "United States" & year_delivery == 2015) %>%
+  select(supplier, recipient, year_delivery, order_id, year_order_ids:last_col()) %>%
+  View()
+```
+
+
+
+### Labels
+
+```{r}
+# names(sipri2)
+label(sipri2[["year_order_ids"]]) <- "list of all orders from an exporter to an importer in the given year"
+
+label(sipri2[["year_weapon_categories"]]) <- "list of categories for all arms transfers in the given year"
+label(sipri2[["year_weapon_descriptions"]]) <- "list of descriptions for all arms transfers in the given year"
+label(sipri2[["year_weapon_designation"]]) <- "list of designations for all arms transfers in the given year"
+
+label(sipri2[["year_order_years"]]) <- "list of order years for all arms transfers in the given year"
+label(sipri2[["year_units_delivered"]]) <- "list of delivered units for all arms transfers in the given year"
+
+label(sipri2[["year_tiv_units"]]) <- "list of tiv of one unit for the arms transfers in the given year"
+label(sipri2[["year_tiv_deliveries"]]) <- "list of tiv of all arms transfers in the given year"
+
+label(sipri2[["year_tiv_total"]]) <- "total sum of tiv for all arms transfers in the given year" # target variable in the network analyses later
+label(sipri2[["year_delivery_count"]]) <- "number of arms transfers in the given year"
+label(sipri2[["year_tiv_mean"]]) <- "average tiv of arms transfers in the given year"
+
+# label(sipri2[["year_local_production"]]) <- "are the individual weapons deliveries in the given year locally produced?"
+```
+
+
+## Save 2
+```{r}
+# CSV
+# library(readr)
+# write_csv(sipri2, "sipri2_workingfile.csv") # save
+# sipri2 <- read_csv("sipri2_workingfile.csv") # call
+
+# Rdata
+# save(sipri2, file = "sipri2.RData") # as R data file
+load("sipri2.RData") # call
+```
+
+
+
+
+# 5. SIPRI 3: data aggregate to order-level
+
+Notes:
+-   sipri2 contains data on all levels:
+    - on individual delivery i.e. transfer level, 
+    - on order level
+    - on year level
+-   sipri3 contains only order-level data
+
+
+
+## Subset order-level variables from sipri2
+```{r}
+# names(sipri2)
+# library(dplyr)
+
+# remove all variables that were not aggregates on order-level
+sipri2a <- sipri2 %>% 
+  select(-c(year_delivery, units_delivered, tiv_delivery, order_geopol_del, order_decade_del, year_order_ids:last_col())) %>%
+  select(order_id, supplier, recipient, year_order, order_year_del1, weapon_category, weapon_description, weapon_designation, order_tiv_total, order_units_total, tiv_unit, status, tiv_order, order_duration_del1, order_duration_finish, everything()) %>% 
+  arrange(year_order, supplier, recipient)
+```
+
+## Check data before aggregation
+
+```{r}
+## check data before aggregation
+
+# e.g. Ger --> USA, order 29
+sipri2a %>% 
+  filter(order_id == 29) %>%
+  View()
+
+# ! WHEN THE WEAPON IS SECOND HAND; tiv_unit and tiv_order are different 
+# e.g. USSR --> N.Korea
+sipri2a %>% 
+  filter(order_id == 	16905) %>%
+  View()
+
+# e.g. Czechoslovakia --> Egypt, order 31468
+sipri2a %>% 
+  filter(order_id == 	31468) %>%
+  View()
+```
+
+
+## Aggregate by order i.e. deal
+```{r}
+# Group the data by the "order_id" variable and retain the summarized data for each dyad-order
+# sipri 3 will only retain infos on the order-level
+
+sipri3 <- sipri2a %>% distinct()
+# sipri3 <- sipri2a %>% unique()
+
+```
+@nga: --> 58345 observations (delivery level) reduced to 27394 (order level)
+
+
+
+## Check data after aggregation
+
+Order Nr. 29: Italy --> Brazil in 1969
+```{r}
+sipri2a %>% 
+  filter(order_id == 29)  # ...previously, sipri2 still records all individual delivery-year entries for order number 29, including year of individual deliveries, number of units delivered, and tiv value of that delivery
+```
+
+```{r}
+# compared to sipri 3: there is now only one row for order number 29 with all of our by-order summarized information...
+sipri3 %>% 
+  filter(order_id == 29)
+```
+
+
+Order Nr. 16905: USSR --> N.Korea in 1949 
+```{r}
+# 4 entries, one for each delivery
+sipri2a %>% 
+  filter(order_id == 16905)
+```
+
+```{r}
+# 1 entry for all stats aggregated by order
+sipri3 %>% 
+  filter(order_id == 16905)
+```
+
+
+Number of suppliers & recipients
+--> Despite the aggregation, the number of suppliers (n = 136) and recipients (n = 261) remains the same.
+
+sipri3 compared to sipri1
+```{r}
+# n = 136
+sipri3$supplier %>%
+  unique() %>%  # extract values only once 
+  head()
+# n = 261
+sipri3$recipient %>%
+  unique() %>% 
+  head()
+```
+
+```{r}
+# n = 136
+sipri1$supplier %>%
+  unique() %>%  # extract values only once 
+  head()
+# n = 261
+sipri1$recipient %>%
+  unique() %>% 
+  head()
+```
+
+
+## Save 3
+```{r}
+## CSV
+# library(readr)
+# write_csv(sipri3, "sipri3_workingfile.csv") # save
+# sipri3 <- read_csv("sipri3_workingfile.csv") # call
+
+# Rdata
+# save(sipri3, file = "sipri3.RData") # as R data file
+# load("sipri3.RData") # call
+```
+
+
+
+
+# 6. SIPRI 4: data aggregated to year-level
+
+Notes:
+-   sipri2 contains data on all levels:
+    - on individual delivery i.e. transfer level, 
+    - on order level
+    - on year level
+-   sipri3 contains only order-level data
+-   sipri4 now contains only year-level data
+
+
+## Subset year-level variables from sipri2
+```{r}
+# names(sipri2)
+# library(dplyr)
+
+# remove all variables that were not aggregates on year-level
+sipri2b <- sipri2 %>% 
+  select(supplier,recipient,year_delivery,year_order_ids:last_col()) %>% 
+  arrange(year_delivery, supplier, recipient) %>% 
+  select(supplier,recipient,year_delivery,year_tiv_total,year_delivery_count,year_tiv_mean,everything())
+```
+
+
+## Check data before aggregation
+
+```{r}
+# e.g. Ger --> USA in 2015
+sipri2b %>% 
+  filter(supplier == "Germany" & recipient == "United States" & year_delivery == 2015)
+```
+
+
+## Aggregate by year
+```{r}
+# Group the data by the "year_delivery" variable and retain the summarized data for each dyad-year
+# sipri 4 will only retain infos on the year-level
+
+sipri4 <- sipri2b %>% distinct()
+# sipri4a <- sipri2b %>% unique()
+
+```
+@nga: --> 58345 observations (delivery level) reduced to 22328 (year level)
+
+
+## Aggregate to year-level
+```{r}
+# OLD CODE: dropped
+# sipri4 <- sipri2 %>% # sipri 3 will only retain infos about transfers on the order-level
+#   select(-c(order_id, weapon_category:year_order,
+#             units_delivered:order_decade_del1)) %>%
+#   group_by(supplier, recipient, year_delivery) %>%
+#   summarise_all(first) %>% 
+#   select(supplier, recipient, year_delivery, year_tiv_total, everything()) %>% 
+#   arrange(supplier,recipient,year_delivery) %>% 
+#   ungroup()
+```
+
+
+## Check data after aggregation
+
+```{r}
+# ...previously, sipri2 still records information about all individual transfers from Ger to the US in 2015
+sipri2b %>% 
+  filter(supplier == "Germany" & recipient == "United States" & year_delivery == 2015)
+```
+
+```{r}
+# compared to sipri : there is now only one row with aggregated information about the transfers from Ger to USA in 2015
+sipri4 %>% 
+  filter(supplier == "Germany" & recipient == "United States" & year_delivery == 2015)
+```
+
+## Save 4
+```{r}
+# CSV
+# library(readr)
+# write_csv(sipri4, "sipri4_workingfile.csv") # save
+# sipri4 <- read_csv("sipri4_workingfile.csv") # call
+
+# Rdata
+# save(sipri4, file = "sipri4.RData") # as R data file
+# load("sipri4.RData") # call
+```
+
+
+
+
+# 7. Descriptive exploration
+
+### Filter for specific deliveries
+```{r}
+# To which country did Germany deliver weapons twice in 1994? --> Denmark & Finland
+sipri2 %>%
+  group_by(year_delivery, supplier, recipient) %>%
+  filter(supplier == "Germany", year_delivery == 1994) %>%
+  count() %>%
+  filter(n == 2)
+
+# Details of transfers Ger-Denmark
+sipri2 %>%
+  filter(supplier == "Germany", recipient == "Denmark", year_delivery == 1994)
+```
+
+
+### Average time between signing a deal (i.e. order) and first delivery
+```{r}
+# post WWII era: 1.54 years
+sipri3 %>% 
+  pull(order_duration_del1) %>% 
+  mean()
+```
+@nga: ca. 1.5 years between ordering & first delivery for total period 1950-2023
+
+```{r}
+# CW era
+sipri3 %>%  
+  filter(order_year_del1 >= 1950 & order_year_del1 <= 1991) %>% 
+  pull(order_duration_del1) %>%
+  mean()
+```
+@nga: ca. 1.2 years between ordering & first delivery for CW period 1950-1991
+
+```{r}
+# post CW era, but before annexation of Crimea, 1992-2013
+sipri3 %>%  
+  filter(order_year_del1 >= 1992 & order_year_del1 <= 2013) %>% 
+  pull(order_duration_del1) %>%
+  mean()
+```
+@nga: ca. 1.9 years between ordering & first delivery for 1992-2013
+
+```{r}
+# post Crimea era 2014-2023
+sipri3 %>%  
+  filter(order_year_del1 >= 2014 & order_year_del1 <= 2023) %>% 
+  pull(order_duration_del1) %>%
+  mean()
+```
+@nga: ca. 2 years 
+
+
+
+--> If the analysis were to apply a lag for covariates, a 2-year period seems appropriate.
+
+
+
+
+# CODEBOOK (RAW DATA) SENT BY SIEMON
+
+See: https://www.sipri.org/databases/armstransfers/sources-and-methods
+
+Interpretation of tiv: code as 1 only when TIV exceeds 500000 --> one version aggregate to year-level data, then keep valued version and binary version.
+
+You'll see how the different 'orders' (identified by 'order ID') are broken down by delivery year (instead of the aggregates for all delivery years used in the original output) and have the SIPRI TIVs also for each individual delivery year.
+
+Just to explain what is what in the output:
+
+-   order ID: an internal id number given to each order/contract/agreement - it is included because it is the only thing that links the separate annual delivery rows; in the output it is the 1st level of sorting but if you sort by any other column you can see from the 'order ID' which rows belong to each other.
+
+-   supplier: supplier or supplier/exporter country (or rebel force or international organisation).
+
+-   recipient: recipient or recipient/importer country (or rebel force or international organisation).
+
+-   weapon_designation: the weapon_designation or name of the weapon - generally the most common or official version; this may sometimes differ a bit from what some sources give since many weapons have several names or more than one spelling (e.g. use M-113, but sources may also use M113, etc).
+
+-   weapon_description: describes what the weapon is. SIPRI uses weapon_descriptions that are generally used on sources or generally accepted as the weapon_description for that particular weapons. However, there are cases were will use a weapon_description that fits better with the weapon's size or use (e.g. some ships labelled by producers or users as 'corvette', 'OPV' or 'light frigate' are of a size, capability and use that is normally called 'frigate', and some helicopters labelled 'combat helicopter' are for us no more than just 'helicopter')
+
+-   Armament weapon_category: the weapon_category SIPRI puts the weapon in (we have some 12 categories). The categories are generally quite broad.
+
+-   Order date: the year when an order was placed /contract was signed - generally the year of the final agreement, but also often the year of an earlier agreement (e.g. MoU) or year of selection (only when are quite convinced a real order will come).
+
+-   Order date is estimate: a 'yes' if the order year is uncertain - when sources are unclear or contradictory and where have to estimate the year (also 'yes' when a final, final contract has not yet been signed); 'no' if are certain (at least to a very high degree) of the final, final contract signing year.
+
+-   Numbers delivered: number of units delivered in the specific 'delivery year'.
+
+-   Numbers delivered is estimate: a 'yes' if the actual number of units delivered in that year is uncertain - when sources are unclear or contradictory and where have to estimate the number; 'no' if are certain (at least to a very high degree) of the actual number in that year.
+
+-   Delivery year: the year when the weapons was delivered to the recipient - generally when it was delivered and accepted (commissioned) by the recipient's military or similar force. Deliveries to the recipient's industry for final assembly or so are not counted before the weapons are finished and delivered to the military. Deliveries for testing/working up (that is before actually becoming operational) are included (e.g. include the 1st deliveries of the JSF to the UK and the Netherlands, even if they are still in the testing phase).
+
+-   Delivery year is estimate: a 'yes' if the delivery year is uncertain - when sources are unclear or contradictory and where have to estimate the year; 'no' if are certain (at least to a very high degree) of the year. Note that may know the actual delivery number for certain but not the actual delivery year or vv.
+
+-   Status: indicates if a weapons is 'new' (not or almost not used before sale - generally straight from the production line, but also second-hand weapons that have been rebuild in the supplier to new status before delivery), or ''second hand' (when used before sale), or 'second hand but modernized' (when second hand but modernized in the supplier before delivery; this does not include simple overhauls/refits - there has to be some serious upgrade before counting as 'second hand but modernized'. The status impacts on the TIV for the particular order: a 'new' weapon is 100% of the 'SIPRI estimate', a 'second hand but modernized' is 66%, and a 'second hand' is 40%. This reflects in a very rough way the loss of capability for used weapons.
+
+-   SIPRI estimate: the TIV for the weapon in general.
+
+-   TIV order unit: the TIV for the weapon in this specific order (i.e. 'SIPRI estimate' x status modifier (1 for 'new', 0.66 for 'second hand but modernized', 0.4 for 'second hand'. )
+
+-   TIV delivery values: the TIV for the deliveries in this specific order and year - calculated as 'SIPRI estimate' x 'numbers delivered' x status modifier (1 for 'new', 0.66 for 'second hand but modernized', 0.4 for 'second hand'. This is the TIV used for the tables of total exports/imports.
+
+-   Local production: 'yes' for any involvement of the recipient's industry in the production of the specific weapon in this order (but not necessarily in this specific year). Involvement must be as production, also of components (including quite limited) but not just assembly of complete kits.
+
+
+

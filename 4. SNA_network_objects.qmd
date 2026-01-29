@@ -1,0 +1,1725 @@
+---
+title: "INTERNATIONAL ARMS TRADE NETWORKS: CREATE NETWORK OBJECTS"
+author: "QN Nguyen"
+date: "`r Sys.Date()`"
+format:
+  html:
+    theme: cosmo
+    highlight-style: tango
+    toc: true
+    toc-depth: 2
+    toc-float: true
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# SETTINGS
+
+```{r}
+knitr::opts_chunk$set(
+  fig.width = 12,
+  fig.height = 10,
+  fig.path = "Figs/",
+  fig.align = "center",
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  include = TRUE
+)
+
+options(
+  xtable.comment = FALSE,
+  scipen = 9999,
+  tinytex.verbose = TRUE
+)
+```
+
+
+```{r}
+### BASIC TOOLS
+pacman::p_load(devtools, ggplot2, dplyr, tidyr, haven, vtable, summarytools, sjmisc, psych, stats, Hmisc) # foreign, graphics, utils, scales, qgraph, ggcorrplot, stringr
+
+### SNA TOOLS
+pacman::p_load(network, igraph, statnet, intergraph, sna, networkDynamic) # qgraph, tidygraph, ergm, btergm, tsna, ndtv, htmlwidgets
+
+### WD
+# setwd('G:/My Drive/1. Uni/Hausarbeiten 2023/SNA_weapons/SNA_weapons_analysis')
+
+### CLEAN UP ENVIRONMENT
+# rm(list= ls())
+
+### CLEAN SELECTIVELY
+# all <- ls()
+# keep <- c("x1", "x2", ...)
+# rm(list = setdiff(all, keep))
+
+### UPDATES
+# statnet::update_statnet()
+```
+
+Statnet and Igraph might mask one another, then detach one or the other, depending on which one is in use.
+```{r}
+# library(igraph)
+# detach("package:igraph", unload = FALSE)
+
+# library(sna)
+# library(statnet)
+# detach("package:statnet", unload = FALSE)
+```
+
+```{r}
+# if ("package:statnet" %in% search()) {
+#   detach("package:statnet", unload = FALSE)
+# }
+# library(igraph)
+```
+
+```{r}
+# if ("package:igraph" %in% search()) {
+#   detach("package:igraph", unload = FALSE)
+# }
+# library(statnet)
+# library(sna)
+```
+
+<br>
+
+
+
+
+# Import data
+
+```{r}
+## ADJACENCY MATRICES (WEIGHTED)
+  load("iat_adj2.RData")
+  load("alliance_adj2.RData")
+  load("conflict_adj2.RData")
+  
+## ADJACENCY MATRICES (BINARY)
+  load("iat_adj2.bin.RData")
+  load("alliance_adj2.bin.RData")
+  load("conflict_adj2.bin.RData")
+  
+## EDGE & NODE COVARIATES COUNTRY DATA FRAMES 1993-2023
+  load("iat_t_agg.RData") # iat edge data aggregated by t
+  # load("iat_year_agg.RData")  # dyad-year level
+  load("alliance_t_agg.RData") # alliance edge data aggregated by t
+  load("conflict_t_agg.RData") # conflict edge data aggregated by t
+  load("cov_agg.RData") # merged & imputed node data 1993-2023, all 193 countries
+
+## EDGE & NODE COVARIATES LISTS (6 T-SPELLS)
+  load("iat_list.RData") # 6 iat edge dfs stored in a list
+  load("alliance_list.RData") # 6 alliance edge dfs stored in a list
+  load("conflict_list.RData") # 6 conflict edge dfs stored in a list
+  load("cov_list.RData") # 6 node dfs stored in a list
+
+## TIME SPELLS
+tspells <- c("1993-97","1998-02","2003-07","2008-12","2013-17","2018-23")
+# save(tspells, file = "tspells.RData")
+# load("tspells.RData")
+```
+
+
+
+
+
+# I) IAT NETWORKS (INC. NODE COVARIATES)
+
+Loop over time spells: Create `lists` with the iat networks including matching covariates for different time spells.
+
+```{r}
+# library(igraph)
+# detach("package:igraph", unload = FALSE)
+
+# library(sna)
+# library(statnet)
+# detach("package:statnet", unload = FALSE)
+```
+
+
+
+
+
+### 2.1) Create IAT inet & snet networks
+
+
+
+#### 2.1.1) weighted
+```{r}
+# library(igraph)
+# library(statnet)
+# library(intergraph)
+
+# initialize 2 empty list objects, one for inet and one for snet
+iat_inet_nocov <- list() # iat igraph networks without node attributes
+iat_snet_nocov <- list() # iat statnet networks without node attributes
+
+# Loop over network list elements
+for(i in 1:length(iat_adj2)) {
+  library(igraph)
+  
+  ## Get adj matrix
+  adj <- iat_adj2[[i]]
+  
+  ## Turn to graph object from data frame edge list
+  inet <- igraph::graph_from_adjacency_matrix(adj, mode = "directed", weighted = TRUE, diag = FALSE) # weighted, no loops
+
+  ## Transform from igraph object to statnet's "network" class
+  snet <- intergraph::asNetwork(inet)
+  
+  ## save inet
+  iat_inet_nocov[[paste0("t", i)]] <- inet
+  ## save snet
+  iat_snet_nocov[[paste0("t", i)]] <- snet
+  
+}
+
+```
+
+```{r}
+View(get.adjacency(iat_inet_nocov$t6, attr = "weight", sparse = FALSE))
+View(get.adjacency(iat_inet_nocov$t6, sparse = FALSE))
+```
+
+
+
+```{r}
+# save(iat_inet_nocov, file = "iat_inet_nocov.RData")
+# load("iat_inet_nocov.RData")
+
+# save(iat_snet_nocov, file = "iat_snet_nocov.RData")
+# load("iat_snet_nocov.RData")
+```
+
+
+#### 2.1.2.) binary
+
+```{r}
+# initialize 2 empty list objects, one for inet and one for snet
+iat_inet_nocov.bin <- list() # iat binary igraph networks without node attributes
+iat_snet_nocov.bin <- list() # iat binary statnet networks without node attributes
+
+# Loop over network list elements
+for(i in 1:length(iat_adj2.bin)) {
+  library(igraph)
+
+  ## Get adj matrix
+  adj <- iat_adj2.bin[[i]]
+
+  ## Turn to graph object from data frame edge list
+  inet <- igraph::graph_from_adjacency_matrix(adj, mode = "directed", weighted = FALSE, diag = FALSE) # binary, no loops
+
+  ## Transform from igraph object to statnet's "network" class
+  snet <- intergraph::asNetwork(inet)
+
+  ## save inet
+  iat_inet_nocov.bin[[paste0("t", i)]] <- inet
+  ## save snet
+  iat_snet_nocov.bin[[paste0("t", i)]] <- snet
+
+}
+```
+
+```{r}
+View(get.adjacency(iat_inet_nocov.bin$t6, sparse = FALSE)) # binary
+View(get.adjacency(iat_inet_nocov$t6, sparse = FALSE)) # binary view in weighted network
+View(get.adjacency(iat_inet_nocov$t6, attr = "weight", sparse = FALSE)) # weighted
+```
+
+
+```{r}
+# save(iat_inet_nocov.bin, file = "iat_inet_nocov.bin.RData")
+# load("iat_inet_nocov.bin.RData")
+
+# save(iat_snet_nocov.bin, file = "iat_snet_nocov.bin.RData")
+# load("iat_snet_nocov.bin.RData")
+```
+
+
+
+### 2.2) Match cov df to network nodes' order
+
+```{r}
+# load("cov_agg.RData")
+# load("iat_inet_nocov.RData")
+# load("iat_snet_nocov.RData")
+
+names(cov_agg)
+names(cov_list$t1)
+```
+
+```{r}
+# detach("package:igraph")
+# library(igraph)
+# library(statnet)
+# library(intergraph)
+
+cov_net <- list() # initiate list to store cov dfs, matched to order of nodes in the iat networks
+## Loop over cov list
+for(i in 1:length(cov_list)) {
+  
+  ## get the complete covariates df at t 
+  cov1 <- cov_list[[i]]
+  
+  ## match & order country names from cov df to arms transfer networks' node names
+  cov1 <- cov1[match(network.vertex.names(iat_snet_nocov[[i]]), cov1$state1h),]
+  
+  ## add to list of "clean" cov dfs
+  cov_net[[paste0("t", i)]] <- cov1
+}
+
+```
+
+```{r}
+a <-  cov_net$t1$state1h # order in cov_net
+igraph::V(iat_inet_nocov$t1)$name # order in iat_inet
+iat_snet_nocov$t1 %v% "vertex.names" # order in iat_snet
+
+# identical order between cov_net and iat_inet and iat_snet
+identical((as.character(cov_net$t1$state1h)),(igraph::V(iat_inet_nocov$t1)$name))
+identical((as.character(cov_net$t1$state1h)),(iat_snet_nocov$t1 %v% "vertex.names"))
+```
+Order of nodes look the same in cov df and in networks.
+
+```{r}
+## same in both cov_net and iat_inet
+# igraph::V(iat_inet_nocov$t1)$milex <- cov_net$t1$milex
+# cov_net$t1$milex
+# iat_inet_nocov$t1
+```
+
+```{r}
+# save(cov_net, file = "cov_net.RData")
+load("cov_net.RData")
+```
+
+
+
+### 2.3) Attach node attributes to network nodes
+
+
+#### 2.3.1. Inet
+
+
+##### weighted iat inet list
+```{r}
+# library(igraph)
+
+iat_inet <- list() # initiate list for iat igraph network inc. node attributes
+
+for(i in 1:length(iat_inet_nocov)) {
+  
+  ## Get inet network object
+  net <- iat_inet_nocov[[i]]
+  
+  ## Get covariate data frame
+  cov_i <- cov_net[[i]]
+  
+  ## Add covariates to network
+  
+    ## ID iso 3 alpha
+    igraph::V(net)$iso <- cov_i$iso1
+    ## ID un m49
+    igraph::V(net)$un <- cov_i$un1
+
+    ## MILEX
+    # node's total military expenditure in t
+    igraph::V(net)$milex <- cov_i$milex
+    # node's yearly av. log milex during t
+    igraph::V(net)$ln_milex <- cov_i$ln_milex
+    igraph::V(net)$log2_milex <- cov_i$log2_milex
+    igraph::V(net)$log10_milex <- cov_i$log10_milex
+    # milex categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_milex <- cov_i$milex_cat
+    # node's yearly av. military burden (milex/gdp) in t
+    igraph::V(net)$milbur <- cov_i$mil_burden 
+    # node's yearly av. log military burden during t
+    igraph::V(net)$ln_milbur <- cov_i$ln_mil_burden
+    # mil burden categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_milbur <- cov_i$mil_burden_cat
+    
+    ## WEO
+    # node's yearly av. gdp during t
+    igraph::V(net)$gdp <- cov_i$gdp 
+    # node's yearly av. log gdp during t
+    igraph::V(net)$ln_gdp <- cov_i$ln_gdp
+    igraph::V(net)$log2_gdp <- cov_i$log2_gdp
+    igraph::V(net)$log10_gdp <- cov_i$log10_gdp
+    # gdp categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_gdp <- cov_i$gdp_cat
+    # node's yearly av. population count during t
+    igraph::V(net)$population <- cov_i$population 
+    # node's yearly av. log population during t
+    igraph::V(net)$ln_population <- cov_i$ln_population
+    igraph::V(net)$log2_population <- cov_i$log2_population
+    igraph::V(net)$log10_population <- cov_i$log10_population
+    # pop categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_population <- cov_i$pop_cat
+  
+    ## VDEM
+    # yearly vdem elect. demo score during t, 0-1 (auto-demo)
+    igraph::V(net)$democracy <- cov_i$democracy
+    # demo score categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_democracy <- cov_i$democracy_cat
+    # how many coup(s) during t? (1/0)
+    igraph::V(net)$n_coups <- cov_i$coups
+    # yn - experienced coup(s) during t? (1/0)
+    igraph::V(net)$d_coups <- cov_i$d_coups
+    # node's av. yearly policy sovereignty score during t
+    igraph::V(net)$n_sovscore <- cov_i$sov_score
+    # upper 50%, i.e. av. yearly policy sovereignty score > 1.5 during t? (1/0)
+    igraph::V(net)$d_sovscore<- cov_i$d_sov_score
+    # sov score categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_sovscore <- cov_i$sov_score_cat
+    
+    # yn - min. 95% of territory under effective control during t? (1/0)
+    igraph::V(net)$ter_95 <- cov_i$d_sov_ter
+    
+    ## UCDP
+    # yn - involved in violent conflict(s) during t?
+    igraph::V(net)$d_conf <- cov_i$d_conf
+    # involved in how many violent conflict(s) during t?
+    igraph::V(net)$n_conf <- cov_i$conf_n
+    # ucdp conf id: which conflics during t?
+    igraph::V(net)$conf_ids <- cov_i$conf_conf_ids
+    
+    # fighting how many adversaries in violent conflict(s) during t?
+    igraph::V(net)$n_enemies <- cov_i$enem_n
+    # ucdp dyad id: which adversaries during t?
+    igraph::V(net)$enem_ids <- cov_i$conf_dyad_ids
+    
+    # in inter conflict(s) with how many during t?
+    igraph::V(net)$n_inter <- cov_i$enem_inter
+    # yn - in inter conf with min. one enemy during t?
+    igraph::V(net)$d_inter <- cov_i$d_inter
+    
+    # in intra conflict(s) (without for. interv) with how many during t?
+    igraph::V(net)$n_intra <- cov_i$enem_intra
+    # yn - in intra conf (without for. interv) with min. one enemy during t?
+    igraph::V(net)$d_intra_pure <- cov_i$d_intra_old
+    # yn - in intra conf (with or no for. interv) with min. one enemy during t?
+    igraph::V(net)$d_intra <- cov_i$d_intra
+    
+    # in intern. intra conflict(s) with how many during t?
+    igraph::V(net)$n_interintra <- cov_i$enem_interintra
+    # yn - in intern. intra conf with min. one enemy during t?
+    igraph::V(net)$d_interintra <- cov_i$d_interintra
+    
+    # in minor conflict(s) with how many during t?
+    igraph::V(net)$n_minor <- cov_i$enem_minor
+    # yn - in minor conf with min. one enemy during t?
+    igraph::V(net)$d_minor <- cov_i$d_minor
+    
+    # in war with how many during t?
+    igraph::V(net)$n_war <- cov_i$enem_war
+    # yn - in war conf with min. one enemy during t?
+    igraph::V(net)$d_war<- cov_i$d_war
+    
+    # in ter conf with how many during t?
+    igraph::V(net)$n_ter <- cov_i$enem_ter
+    # yn - in ter conf with min. one enemy during t?
+    igraph::V(net)$d_ter<- cov_i$d_ter
+    
+    # in pol conf with how many during t?
+    igraph::V(net)$n_pol<- cov_i$enem_pol
+    # yn - in pol conf with min. one enemy during t?
+    igraph::V(net)$d_pol<- cov_i$d_pol
+  
+  ## Add to list
+  iat_inet[[paste0("t", i)]] <- net
+  
+}
+
+```
+
+###### save 1
+```{r}
+# save(iat_inet, file = "iat_inet.RData")
+# load("iat_inet.RData")
+```
+
+
+
+
+##### binary iat inet list
+
+```{r}
+# library(igraph)
+
+iat_inet.bin <- list() # initiate list for iat igraph binary network inc. node attributes
+
+for(i in 1:length(iat_inet_nocov.bin)) {
+  
+  ## Get inet network object
+  net <- iat_inet_nocov.bin[[i]]
+  
+  ## Get covariate data frame
+  cov_i <- cov_net[[i]]
+  
+  ## Add covariates to network
+  
+    ## ID iso 3 alpha
+    igraph::V(net)$iso <- cov_i$iso1
+    ## ID un m49
+    igraph::V(net)$un <- cov_i$un1
+
+    ## MILEX
+    # node's total military expenditure in t
+    igraph::V(net)$milex <- cov_i$milex
+    # node's yearly av. log milex during t
+    igraph::V(net)$ln_milex <- cov_i$ln_milex
+    igraph::V(net)$log2_milex <- cov_i$log2_milex
+    igraph::V(net)$log10_milex <- cov_i$log10_milex
+    # milex categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_milex <- cov_i$milex_cat
+    # node's yearly av. military burden (milex/gdp) in t
+    igraph::V(net)$milbur <- cov_i$mil_burden 
+    # node's yearly av. log military burden during t
+    igraph::V(net)$ln_milbur <- cov_i$ln_mil_burden
+    # mil burden categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_milbur <- cov_i$mil_burden_cat
+    
+    ## WEO
+    # node's yearly av. gdp during t
+    igraph::V(net)$gdp <- cov_i$gdp 
+    # node's yearly av. log gdp during t
+    igraph::V(net)$ln_gdp <- cov_i$ln_gdp
+    igraph::V(net)$log2_gdp <- cov_i$log2_gdp
+    igraph::V(net)$log10_gdp <- cov_i$log10_gdp
+    # gdp categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_gdp <- cov_i$gdp_cat
+    # node's yearly av. population count during t
+    igraph::V(net)$population <- cov_i$population 
+    # node's yearly av. log population during t
+    igraph::V(net)$ln_population <- cov_i$ln_population
+    igraph::V(net)$log2_population <- cov_i$log2_population
+    igraph::V(net)$log10_population <- cov_i$log10_population
+    # pop categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_population <- cov_i$pop_cat
+  
+    ## VDEM
+    # yearly vdem elect. demo score during t, 0-1 (auto-demo)
+    igraph::V(net)$democracy <- cov_i$democracy
+    # demo score categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_democracy <- cov_i$democracy_cat
+    # how many coup(s) during t? (1/0)
+    igraph::V(net)$n_coups <- cov_i$coups
+    # yn - experienced coup(s) during t? (1/0)
+    igraph::V(net)$d_coups <- cov_i$d_coups
+    # node's av. yearly policy sovereignty score during t
+    igraph::V(net)$n_sovscore <- cov_i$sov_score
+    # upper 50%, i.e. av. yearly policy sovereignty score > 1.5 during t? (1/0)
+    igraph::V(net)$d_sovscore<- cov_i$d_sov_score
+    # sov score categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+    igraph::V(net)$cat_sovscore <- cov_i$sov_score_cat
+    
+    # yn - min. 95% of territory under effective control during t? (1/0)
+    igraph::V(net)$ter_95 <- cov_i$d_sov_ter
+    
+    ## UCDP
+    # yn - involved in violent conflict(s) during t?
+    igraph::V(net)$d_conf <- cov_i$d_conf
+    # involved in how many violent conflict(s) during t?
+    igraph::V(net)$n_conf <- cov_i$conf_n
+    # ucdp conf id: which conflics during t?
+    igraph::V(net)$conf_ids <- cov_i$conf_conf_ids
+    
+    # fighting how many adversaries in violent conflict(s) during t?
+    igraph::V(net)$n_enemies <- cov_i$enem_n
+    # ucdp dyad id: which adversaries during t?
+    igraph::V(net)$enem_ids <- cov_i$conf_dyad_ids
+    
+    # in inter conflict(s) with how many during t?
+    igraph::V(net)$n_inter <- cov_i$enem_inter
+    # yn - in inter conf with min. one enemy during t?
+    igraph::V(net)$d_inter <- cov_i$d_inter
+    
+    # in intra conflict(s) (without for. interv) with how many during t?
+    igraph::V(net)$n_intra <- cov_i$enem_intra
+    # yn - in intra conf (without for. interv) with min. one enemy during t?
+    igraph::V(net)$d_intra_pure <- cov_i$d_intra_old
+    # yn - in intra conf (with or no for. interv) with min. one enemy during t?
+    igraph::V(net)$d_intra <- cov_i$d_intra
+    
+    # in intern. intra conflict(s) with how many during t?
+    igraph::V(net)$n_interintra <- cov_i$enem_interintra
+    # yn - in intern. intra conf with min. one enemy during t?
+    igraph::V(net)$d_interintra <- cov_i$d_interintra
+    
+    # in minor conflict(s) with how many during t?
+    igraph::V(net)$n_minor <- cov_i$enem_minor
+    # yn - in minor conf with min. one enemy during t?
+    igraph::V(net)$d_minor <- cov_i$d_minor
+    
+    # in war with how many during t?
+    igraph::V(net)$n_war <- cov_i$enem_war
+    # yn - in war conf with min. one enemy during t?
+    igraph::V(net)$d_war<- cov_i$d_war
+    
+    # in ter conf with how many during t?
+    igraph::V(net)$n_ter <- cov_i$enem_ter
+    # yn - in ter conf with min. one enemy during t?
+    igraph::V(net)$d_ter<- cov_i$d_ter
+    
+    # in pol conf with how many during t?
+    igraph::V(net)$n_pol<- cov_i$enem_pol
+    # yn - in pol conf with min. one enemy during t?
+    igraph::V(net)$d_pol<- cov_i$d_pol
+  
+  ## Add to list
+  iat_inet.bin[[paste0("t", i)]] <- net
+  
+}
+
+```
+
+
+###### save 2
+```{r}
+# save(iat_inet.bin, file = "iat_inet.bin.RData")
+# load("iat_inet.bin.RData")
+```
+
+
+
+
+#### 2.3.2. Snet
+
+##### weighted iat snet list
+
+```{r}
+cov_net[[1]] %>% select(log2_gdp)
+```
+
+```{r}
+# library(intergraph)
+# library(statnet)
+
+iat_snet <- list() #  initiate list for iat statnet network inc. node attributes
+
+for(i in 1:length(iat_snet_nocov)) {
+  
+  ## Get snet network object
+  net <- iat_snet_nocov[[i]]
+  
+  ## Get covariate data frame
+  cov_i <- cov_net[[i]]
+  
+  ## Add attributes
+      ## ID iso 3 alpha
+      cov_i$iso <- as.character(cov_i$iso1)
+      net %v% "iso" <- cov_i$iso
+      ## ID un m49
+      cov_i$un <- as.character(cov_i$un1)
+      net %v% "un" <- cov_i$un
+
+      ## MILEX
+      # node's total military expenditure in t
+      cov_i$milex <- as.numeric(cov_i$milex)
+      net %v% "milex" <- cov_i$milex
+      
+      # node's yearly av. log military expenditure during t
+      cov_i$ln_milex <- as.numeric(cov_i$ln_milex)
+      net %v% "ln_milex" <- cov_i$ln_milex
+      cov_i$log2_milex <- as.numeric(cov_i$log2_milex)
+      net %v% "log2_milex" <- cov_i$log2_milex
+      cov_i$log10_milex <- as.numeric(cov_i$log10_milex)
+      net %v% "log10_milex" <- cov_i$log10_milex
+      
+      # milex categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_milex <- as.numeric(cov_i$milex_cat)
+      net %v% "cat_milex" <- cov_i$cat_milex
+
+      # node's yearly av. military burden (milex/gdp) in t
+      cov_i$milbur <- as.numeric(cov_i$mil_burden)
+      net %v% "milbur" <- cov_i$milbur 
+      
+      # node's yearly av. log military burden during t
+      cov_i$ln_milbur <- as.numeric(cov_i$ln_mil_burden)
+      net %v% "ln_milbur" <- cov_i$ln_milbur
+      
+      # mil burden categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_milbur <- as.numeric(cov_i$mil_burden_cat)
+      net %v% "cat_milbur" <- cov_i$cat_milbur
+      
+      ## WEO
+      # node's yearly av. gdp during t
+      cov_i$gdp <- as.numeric(cov_i$gdp)
+      net %v% "gdp" <- cov_i$gdp 
+      
+      # node's yearly av. log gdp during t
+      cov_i$ln_gdp <- as.numeric(cov_i$ln_gdp) 
+      net %v% "ln_gdp" <- cov_i$ln_gdp
+      cov_i$log2_gdp <- as.numeric(cov_i$log2_gdp) 
+      net %v% "log2_gdp" <- cov_i$log2_gdp
+      cov_i$log10_gdp <- as.numeric(cov_i$log10_gdp) 
+      net %v% "log10_gdp" <- cov_i$log10_gdp
+      
+      # gdp categorical: node's gdp ranked in bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_gdp <- as.numeric(cov_i$gdp_cat) 
+      net %v% "cat_gdp" <- cov_i$cat_gdp
+      
+      # node's yearly av. population count during t
+      cov_i$population <- as.numeric(cov_i$population) 
+      net %v% "population" <- cov_i$population
+
+      # node's yearly av. log population during t
+      cov_i$ln_population <- as.numeric(cov_i$ln_population)
+      net %v% "ln_population" <- cov_i$ln_population
+      cov_i$log2_population <- as.numeric(cov_i$log2_population)
+      net %v% "log2_population" <- cov_i$log2_population
+      cov_i$log10_population <- as.numeric(cov_i$log10_population)
+      net %v% "log10_population" <- cov_i$log10_population
+      
+      # pop categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_population <- as.numeric(cov_i$pop_cat) 
+      net %v% "cat_population" <- cov_i$cat_population
+
+      
+      ## VDEM
+      # yearly vdem elect. demo score during t, 0-1 (auto-demo)
+      cov_i$democracy <- as.numeric(cov_i$democracy) 
+      net %v% "democracy" <- cov_i$democracy
+      
+      # demo score categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_democracy <- as.numeric(cov_i$democracy_cat) 
+      net %v% "cat_democracy" <- cov_i$cat_democracy
+      
+      # how many coup(s) during t? (1/0)
+      cov_i$n_coups <- as.numeric(cov_i$coups)
+      net %v% "n_coups" <- cov_i$n_coups 
+      
+      # experienced coup(s) during t? (1/0)
+      cov_i$d_coups <- as.numeric(cov_i$d_coups)
+      net %v% "d_coups" <- cov_i$d_coups
+      
+      # node's av. yearly policy sovereignty score during t
+      cov_i$n_sovscore <- as.numeric(cov_i$sov_score)
+      net %v% "n_sovscore" <- cov_i$n_sovscore
+      
+      # upper 50%, i.e. av. yearly policy sovereignty score > 1.5 during t? (1/0)
+      cov_i$d_sovscore <- as.numeric(cov_i$d_sov_score) 
+      net %v% "d_sovscore" <- cov_i$d_sovscore
+      
+      # sov score categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_sovscore <- as.numeric(cov_i$sov_score_cat) 
+      net %v% "cat_sovscore" <- cov_i$cat_sovscore
+      
+      # min. 95% of territory under effective control during t? (1/0)
+      cov_i$ter_95 <- as.numeric(cov_i$d_sov_ter) 
+      net %v% "ter_95" <- cov_i$ter_95
+      
+      
+      ## UCDP
+      # ucdp conf id: which conflics during t?
+      cov_i$conf_ids <- as.character(cov_i$conf_conf_ids)
+      net %v% "conf_ids" <- cov_i$conf_ids
+      
+      # yn - involved in violent conflict(s) during t?
+      cov_i$d_conf <- as.numeric(cov_i$d_conf) 
+      net %v% "d_conf" <- cov_i$d_conf
+      
+      # involved in how many violent conflict(s) during t?
+      cov_i$n_conf <- as.numeric(cov_i$conf_n) 
+      net %v% "n_conf" <- cov_i$n_conf
+      
+      # ucdp dyad id: which adversaries during t?
+      cov_i$enem_ids <- as.character(cov_i$conf_dyad_ids)
+      net %v% "enem_ids" <- cov_i$enem_ids
+      
+      # in conflict(s) with how many during t?
+      cov_i$n_enemies <- as.numeric(cov_i$enem_n) 
+      net %v% "n_enemies" <- cov_i$n_enemies
+      
+      # in inter conflict(s) with how many during t?
+      cov_i$n_inter <- as.numeric(cov_i$enem_inter) 
+      net %v% "n_inter" <- cov_i$n_inter
+      # yn - in inter conf with min. one enemy during t?
+      cov_i$d_inter <- as.numeric(cov_i$d_inter) 
+      net %v% "d_inter" <- cov_i$d_inter
+      
+      # in intra conflict(s) (without for. interv) with how many during t?
+      cov_i$n_intra <- as.numeric(cov_i$enem_intra) 
+      net %v% "n_intra" <- cov_i$n_intra
+      # yn - in intra conf (without for. interv) with min. one enemy during t?
+      cov_i$d_intra_pure <- as.numeric(cov_i$d_intra_old) 
+      net %v% "d_intra_pure" <- cov_i$d_intra_pure
+      # yn - in intra conf (with or no for. interv) with min. one enemy during t?
+      cov_i$d_intra <- as.numeric(cov_i$d_intra) 
+      net %v% "d_intra" <- cov_i$d_intra
+      
+      # in intern. intra conflict(s) with how many during t?
+      cov_i$n_interintra <- as.numeric(cov_i$enem_interintra) 
+      net %v% "n_interintra" <- cov_i$n_interintra
+      # yn - in inter conf with min. one enemy during t?
+      cov_i$d_interintra <- as.numeric(cov_i$d_interintra) 
+      net %v% "d_interintra" <- cov_i$d_interintra
+      
+      
+      # in minor conflict(s) with how many during t?
+      cov_i$n_minor <- as.numeric(cov_i$enem_minor) 
+      net %v% "n_minor" <- cov_i$n_minor
+     # yn - in minor conf with min. one enemy during t?
+      cov_i$d_minor <- as.numeric(cov_i$d_minor) 
+      net %v% "d_minor" <- cov_i$d_minor
+      
+      # in war with how many during t?
+      cov_i$n_war <- as.numeric(cov_i$enem_war) 
+      net %v% "n_war" <- cov_i$n_war
+      # yn - in war conf with min. one enemy during t?
+      cov_i$d_war <- as.numeric(cov_i$d_war) 
+      net %v% "d_war" <- cov_i$d_war
+      
+      # in ter conf with how many during t?
+      cov_i$n_ter <- as.numeric(cov_i$enem_ter) 
+      net %v% "n_ter" <- cov_i$n_ter
+      # yn - in ter conf with min. one enemy during t?
+      cov_i$d_ter <- as.numeric(cov_i$d_ter) 
+      net %v% "d_ter" <- cov_i$d_ter
+      
+      # in pol conf with how many during t?
+      cov_i$n_pol <- as.numeric(cov_i$enem_pol) 
+      net %v% "n_pol" <- cov_i$n_pol
+      
+      # yn - in pol conf with min. one enemy during t?
+      cov_i$d_pol <- as.numeric(cov_i$d_pol) 
+      net %v% "d_pol" <- cov_i$d_pol
+  
+  
+  ## Add to list
+  iat_snet[[paste0("t", i)]] <- net
+  
+}
+
+```
+
+###### save 3
+```{r}
+# save(iat_snet, file = "iat_snet.RData")
+# load("iat_snet.RData")
+```
+
+
+
+
+##### binary iat snet list
+
+
+```{r}
+# library(intergraph)
+# library(statnet)
+
+iat_snet.bin <- list()  # initiate list for binary iat statnet network inc. node attributes
+
+for(i in 1:length(iat_snet_nocov.bin)) {
+  
+  ## Get snet network object
+  net <- iat_snet_nocov.bin[[i]]
+  
+  ## Get covariate data frame
+  cov_i <- cov_net[[i]]
+  
+  ## Add attributes
+      ## ID iso 3 alpha
+      cov_i$iso <- as.character(cov_i$iso1)
+      net %v% "iso" <- cov_i$iso
+      ## ID un m49
+      cov_i$un <- as.character(cov_i$un1)
+      net %v% "un" <- cov_i$un
+
+      ## MILEX
+      # node's total military expenditure in t
+      cov_i$milex <- as.numeric(cov_i$milex)
+      net %v% "milex" <- cov_i$milex
+      
+      # node's yearly av. log military expenditure during t
+      cov_i$ln_milex <- as.numeric(cov_i$ln_milex)
+      net %v% "ln_milex" <- cov_i$ln_milex
+      cov_i$log2_milex <- as.numeric(cov_i$log2_milex)
+      net %v% "log2_milex" <- cov_i$log2_milex
+      cov_i$log10_milex <- as.numeric(cov_i$log10_milex)
+      net %v% "log10_milex" <- cov_i$log10_milex
+      
+      # milex categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_milex <- as.numeric(cov_i$milex_cat)
+      net %v% "cat_milex" <- cov_i$cat_milex
+
+      # node's yearly av. military burden (milex/gdp) in t
+      cov_i$milbur <- as.numeric(cov_i$mil_burden)
+      net %v% "milbur" <- cov_i$milbur 
+      
+      # node's yearly av. log military burden during t
+      cov_i$ln_milbur <- as.numeric(cov_i$ln_mil_burden)
+      net %v% "ln_milbur" <- cov_i$ln_milbur
+      
+      # mil burden categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_milbur <- as.numeric(cov_i$mil_burden_cat)
+      net %v% "cat_milbur" <- cov_i$cat_milbur
+      
+      ## WEO
+      # node's yearly av. gdp during t
+      cov_i$gdp <- as.numeric(cov_i$gdp)
+      net %v% "gdp" <- cov_i$gdp 
+      
+      # node's yearly av. log gdp during t
+      cov_i$ln_gdp <- as.numeric(cov_i$ln_gdp) 
+      net %v% "ln_gdp" <- cov_i$ln_gdp
+      cov_i$log2_gdp <- as.numeric(cov_i$log2_gdp) 
+      net %v% "log2_gdp" <- cov_i$log2_gdp
+      cov_i$log10_gdp <- as.numeric(cov_i$log10_gdp) 
+      net %v% "log10_gdp" <- cov_i$log10_gdp
+      
+      # gdp categorical: node's gdp ranked in bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_gdp <- as.numeric(cov_i$gdp_cat) 
+      net %v% "cat_gdp" <- cov_i$cat_gdp
+      
+      # node's yearly av. population count during t
+      cov_i$population <- as.numeric(cov_i$population) 
+      net %v% "population" <- cov_i$population
+
+      # node's yearly av. log population during t
+      cov_i$ln_population <- as.numeric(cov_i$ln_population)
+      net %v% "ln_population" <- cov_i$ln_population
+      cov_i$log2_population <- as.numeric(cov_i$log2_population)
+      net %v% "log2_population" <- cov_i$log2_population
+      cov_i$log10_population <- as.numeric(cov_i$log10_population)
+      net %v% "log10_population" <- cov_i$log10_population
+      
+      # pop categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_population <- as.numeric(cov_i$pop_cat) 
+      net %v% "cat_population" <- cov_i$cat_population
+
+      
+      ## VDEM
+      # yearly vdem elect. demo score during t, 0-1 (auto-demo)
+      cov_i$democracy <- as.numeric(cov_i$democracy) 
+      net %v% "democracy" <- cov_i$democracy
+      
+      # demo score categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_democracy <- as.numeric(cov_i$democracy_cat) 
+      net %v% "cat_democracy" <- cov_i$cat_democracy
+      
+      # how many coup(s) during t? (1/0)
+      cov_i$n_coups <- as.numeric(cov_i$coups)
+      net %v% "n_coups" <- cov_i$n_coups 
+      
+      # experienced coup(s) during t? (1/0)
+      cov_i$d_coups <- as.numeric(cov_i$d_coups)
+      net %v% "d_coups" <- cov_i$d_coups
+      
+      # node's av. yearly policy sovereignty score during t
+      cov_i$n_sovscore <- as.numeric(cov_i$sov_score)
+      net %v% "n_sovscore" <- cov_i$n_sovscore
+      
+      # upper 50%, i.e. av. yearly policy sovereignty score > 1.5 during t? (1/0)
+      cov_i$d_sovscore <- as.numeric(cov_i$d_sov_score) 
+      net %v% "d_sovscore" <- cov_i$d_sovscore
+      
+      # sov score categorical: bottom 25% = 1, middle 25-75% = 2, highest >75% = 3
+      cov_i$cat_sovscore <- as.numeric(cov_i$sov_score_cat) 
+      net %v% "cat_sovscore" <- cov_i$cat_sovscore
+      
+      # min. 95% of territory under effective control during t? (1/0)
+      cov_i$ter_95 <- as.numeric(cov_i$d_sov_ter) 
+      net %v% "ter_95" <- cov_i$ter_95
+      
+      
+      ## UCDP
+      # ucdp conf id: which conflics during t?
+      cov_i$conf_ids <- as.character(cov_i$conf_conf_ids)
+      net %v% "conf_ids" <- cov_i$conf_ids
+      
+      # yn - involved in violent conflict(s) during t?
+      cov_i$d_conf <- as.numeric(cov_i$d_conf) 
+      net %v% "d_conf" <- cov_i$d_conf
+      
+      # involved in how many violent conflict(s) during t?
+      cov_i$n_conf <- as.numeric(cov_i$conf_n) 
+      net %v% "n_conf" <- cov_i$n_conf
+      
+      # ucdp dyad id: which adversaries during t?
+      cov_i$enem_ids <- as.character(cov_i$conf_dyad_ids)
+      net %v% "enem_ids" <- cov_i$enem_ids
+      
+      # in conflict(s) with how many during t?
+      cov_i$n_enemies <- as.numeric(cov_i$enem_n) 
+      net %v% "n_enemies" <- cov_i$n_enemies
+      
+      # in inter conflict(s) with how many during t?
+      cov_i$n_inter <- as.numeric(cov_i$enem_inter) 
+      net %v% "n_inter" <- cov_i$n_inter
+      # yn - in inter conf with min. one enemy during t?
+      cov_i$d_inter <- as.numeric(cov_i$d_inter) 
+      net %v% "d_inter" <- cov_i$d_inter
+      
+      # in intra conflict(s) (without for. interv) with how many during t?
+      cov_i$n_intra <- as.numeric(cov_i$enem_intra) 
+      net %v% "n_intra" <- cov_i$n_intra
+      # yn - in intra conf (without for. interv) with min. one enemy during t?
+      cov_i$d_intra_pure <- as.numeric(cov_i$d_intra_old) 
+      net %v% "d_intra_pure" <- cov_i$d_intra_pure
+      # yn - in intra conf (with or no for. interv) with min. one enemy during t?
+      cov_i$d_intra <- as.numeric(cov_i$d_intra) 
+      net %v% "d_intra" <- cov_i$d_intra
+      
+      # in intern. intra conflict(s) with how many during t?
+      cov_i$n_interintra <- as.numeric(cov_i$enem_interintra) 
+      net %v% "n_interintra" <- cov_i$n_interintra
+      # yn - in inter conf with min. one enemy during t?
+      cov_i$d_interintra <- as.numeric(cov_i$d_interintra) 
+      net %v% "d_interintra" <- cov_i$d_interintra
+      
+      
+      # in minor conflict(s) with how many during t?
+      cov_i$n_minor <- as.numeric(cov_i$enem_minor) 
+      net %v% "n_minor" <- cov_i$n_minor
+     # yn - in minor conf with min. one enemy during t?
+      cov_i$d_minor <- as.numeric(cov_i$d_minor) 
+      net %v% "d_minor" <- cov_i$d_minor
+      
+      # in war with how many during t?
+      cov_i$n_war <- as.numeric(cov_i$enem_war) 
+      net %v% "n_war" <- cov_i$n_war
+      # yn - in war conf with min. one enemy during t?
+      cov_i$d_war <- as.numeric(cov_i$d_war) 
+      net %v% "d_war" <- cov_i$d_war
+      
+      # in ter conf with how many during t?
+      cov_i$n_ter <- as.numeric(cov_i$enem_ter) 
+      net %v% "n_ter" <- cov_i$n_ter
+      # yn - in ter conf with min. one enemy during t?
+      cov_i$d_ter <- as.numeric(cov_i$d_ter) 
+      net %v% "d_ter" <- cov_i$d_ter
+      
+      # in pol conf with how many during t?
+      cov_i$n_pol <- as.numeric(cov_i$enem_pol) 
+      net %v% "n_pol" <- cov_i$n_pol
+      
+      # yn - in pol conf with min. one enemy during t?
+      cov_i$d_pol <- as.numeric(cov_i$d_pol) 
+      net %v% "d_pol" <- cov_i$d_pol
+  
+  
+  ## Add to list
+  iat_snet.bin[[paste0("t", i)]] <- net
+  
+}
+
+
+```
+
+
+###### save 4
+```{r}
+# save(iat_snet.bin, file = "iat_snet.bin.RData")
+# load("iat_snet.bin.RData")
+```
+
+
+# II) DESCRIPTIVES
+
+## Check IAT networks
+
+Test for (some) node covariates in iat network at t1 if `match` assigned attributes correctly to nodes
+```{r}
+# igraph networks
+df_inet <- data.frame(state = (igraph::vertex_attr(iat_inet$t1)$name),
+                      milex = (igraph::vertex_attr(iat_inet$t1)$milex),
+                      gdp = (igraph::vertex_attr(iat_inet$t1)$gdp))
+
+# statnet networks
+df_snet <- data.frame(state = (iat_snet$t1 %v% "vertex.names"),
+                      milex = (iat_snet$t1 %v% "milex"),
+                      gdp = (iat_snet$t1 %v% "gdp"))
+
+# compare with node cov df
+print(cov_net$t1[, c('state1h', 'milex', 'gdp')]) # cov df t1
+print(df_inet) # inet df t1
+print(df_snet) # snet df t1
+# --> Looks good (ie., the same). 
+```
+
+
+
+## Descriptives
+
+### igraph networks
+
+Now we'll check whether the edge weights were correctly assigned to nodes, using the example Germany --> Israel 
+
+igraph nodes
+
+general
+```{r}
+## igraph
+summary(iat_inet$t1)
+# igraph::vertex_attr(iat_inet$t1)
+# igraph::vertex_attr(iat_inet$t1, index = c(1:3))
+# igraph::vertex_attr(iat_inet$t1, index = c(1:3))$milex
+```
+
+#### vertices
+```{r}
+## check weighted nw
+# e.g. node attributes of "Germany" and Israel"
+V(iat_inet$t1)[c("Germany","Israel","United States")]$milex # military expenditure: Germany = ca. 46k ; Israel = ca. 14k; USA = ca. 58k
+igraph::vertex_attr(iat_inet$t1, index = c("Germany","Israel","United States")) # all node attributes of the 3 countries
+
+
+# compare to milex information from cov df
+cov_net$t1 %>% 
+  filter(state1h == "Germany" | state1h == "United States" | state1h == "Israel") %>% 
+  select(state1h, milex)
+# numbers align with those attached to the networks
+```
+
+
+
+#### edges
+```{r}
+## adj matrix
+iat_adj2[[6]]["Germany","Israel"] # for t6, we see in the original matrix the edge Germany --> Israel has the tiv (weight) of ca. 155.7
+
+## igraph
+# edge ID bw Germany - Israel
+igraph::get.edge.ids(iat_inet$t6, c("Germany","Israel"), directed = TRUE) # 291
+igraph::get.edge.ids(iat_inet$t6, c("Israel","Germany"), directed = TRUE) # 358
+igraph::E(iat_inet$t6)[291]$weight # arms transfer value (tiv) from Ger to Isr = ca. 155.7
+```
+Edge value was correctly assigned to nodes. Our networks seem to be fine.
+
+Retrieve weights for specific edges
+```{r}
+# specific edges: Canada->Columbia & Canada->France
+# weight = weapons transfer, measured by sipri's trend indicator value (tiv)
+E(iat_inet$t1)[c(39,41)]
+# edge_attr(iat_inet_t1, index = c(39,41)) # all e.attr of edges 39 and 41
+E(iat_inet$t1)[c(39,41)]$weight # Canada->Columbia = 2.45; Canada->France = 11.00
+```
+
+```{r}
+# compare to iat information from iat dyadic df
+iat_list$t1 %>% 
+  filter(state1h == "Canada" & (state2h == "Colombia" | state2h == "France")) %>%
+  group_by(state1h,state2h) %>% 
+  summarise(weight = sum(weight))
+# numbers align
+```
+
+
+
+### statnet networks
+```{r}
+## statnet
+iat_snet$t1 %v% "vertex.names"
+# iat_snet$t1 %v% "milex"
+# network.vertex.names(iat_snet$t1)
+```
+
+For Snet objects, the vertex IDs have to be retrieved first, then using them to retrieve edge ID. Using these, we can look up vertex and edge attributes.
+
+
+
+#### a) vertex IDs & attributes
+
+```{r}
+iat_snet$t6 # we have 27 vertex attributes inc. vertex names
+```
+
+```{r}
+# GET VERTEX ID OF ALL COUNTRIES
+iat_snet$t6 %v% "vertex.names"  # ID of all nodes, e.g. Germany = vertex 55, Israel = 71
+# network::get.vertex.attribute(iat_snet$t6, attrname="vertex.names") # same code
+# network.vertex.names(iat_snet$t6) # same code
+```
+
+```{r}
+# GET VERTEX ID WITH COUNTRY NAME
+which(network.vertex.names(iat_snet$t6) == "Germany") # vID = 55
+which(network.vertex.names(iat_snet$t6) == "Israel") # vID = 71
+# or look up the names and see which ID i.e. index they have
+```
+
+```{r}
+# GET SPECIFIC VERTEX ATTRIBUTE FOR A SPECIFIC COUNTRY 
+
+# e.g. Germany's military expenditure in t6
+iat_snet$t6 %v% "milex" # milex of all nodes, e.g. Germany = ID 55 = milex ca. 53745 mil USD
+
+# compare with info from data frame 
+cov_list$t6 %>% filter(state1h == "Germany") %>% pull(milex) # aligns with info from cov df
+```
+
+
+```{r}
+# GET SPECIFIC VERTEX ATTRIBUTE FOR A SPECIFIC COUNTRY 
+
+# e.g. Germany's military expenditure in t6
+iat_snet$t6 %v% "log2_gdp" # log2 gdp of all nodes, e.g. Germany = ID 55 = milex ca. 12
+
+# compare with info from data frame 
+cov_list$t6 %>% filter(state1h == "Germany") %>% pull(log2_gdp) # aligns with info from cov df
+```
+
+
+
+#### b) edge ID & attributes
+
+The only edge attributes we saved is weight.
+
+```{r}
+## we only have 1 edge attribute = weight (tiv in million)
+iat_snet$t6 %e% "weight" # all edge weights
+# network::get.edge.attribute(iat_snet$t6, attrname="weight") # same code
+# get.edge.value(iat_snet$t6, "weight") # same code
+```
+
+To look up the weight of a specific dyad, we need their vertex IDs first to find their edge ID. Both vertex IDs and edge ID can be used to retrieve the weight, i.e. tiv values of arms transfer between two countries
+```{r}
+# GET VERTEX ID WITH COUNTRY NAME
+which(network.vertex.names(iat_snet$t6) == "Germany") # vID = 55
+# which(iat_snet$t1 %v% "vertex.names" == "Germany") # same
+which(network.vertex.names(iat_snet$t6) == "Israel") # vID = 71
+# or look up the names and see which ID i.e. index they have
+
+# GET VERTEX ID OF ALL COUNTRIES
+iat_snet$t6 %v% "vertex.names"  # Germany = ID 55
+```
+
+```{r}
+## GET EDGE ID FROM VERTEX IDS
+network::get.edgeIDs(iat_snet$t6, v=55, alter=71, "out") # edge ID = 291
+network::get.dyads.eids(iat_snet$t6, tails=55, head=71, "out") # same, = 291
+```
+
+```{r}
+## GET WEIGHT FROM VERTEX IDS
+network::get.edges(iat_snet$t6, v=55, alter=71, "out") # v=outgoing = 55 = Germany; alter=incoming = 271 = Israel --> iat flow from Ger to Isr weight = ca. 155 in t6
+```
+
+```{r}
+## GET WEIGHT FROM EDGE ID
+iat_snet$t6$mel[[291]] # = ca. 155 (in million tiv)
+```
+
+```{r}
+# compare to iat information from iat dyadic df 
+iat_list$t6 %>% 
+  filter(state1h == "Germany" & state2h == "Israel") %>% # state1h = outgoing, state2h = incoming
+  group_by(state1h,state2h) %>% 
+  summarise(weight = sum(weight))
+# number align = ca 155
+```
+
+
+#### c) check existence of edges
+```{r}
+## ETC
+
+# Get NA edge weights
+iat_snet$t6 %e% "na" # no NAs in the network
+
+# edge exists between these two in t6?
+iat_snet$t6["Germany","Israel"] # edge between these two in t6 = yes
+iat_snet$t1["Vietnam","Israel"] # edge between these two in t1 = no
+```
+
+
+
+
+
+# III) ALLIANCE NETWORKS (NO NODE COVARIATES)
+
+We'll recycle the loop from PREP 2.1) to create the t-separated list of networks for the conflict and alliance dyadic data.
+
+
+## weighted
+```{r}
+# library(statnet)
+# library(intergraph)
+
+# create empty list objects
+alliance_inet <- list()
+alliance_snet <- list()
+
+# Loop over network list elements
+for(i in 1:length(alliance_adj2)) {
+  library(igraph)
+  
+  ## Get adj matrix
+  adj <- alliance_adj2[[i]]
+  
+  ## Turn to graph object from data frame edge list
+  inet <- igraph::graph_from_adjacency_matrix(adj, mode = "undirected", weighted = TRUE, diag = FALSE) # weighted, no loops
+  
+  ## Transform from igraph object to statnet's "network" class
+  snet <- intergraph::asNetwork(inet)
+  
+  ## save inet
+  alliance_inet[[paste0("t", i)]] <- inet
+  ## save snet
+  alliance_snet[[paste0("t", i)]] <- snet
+  
+}
+```
+
+###### save
+```{r}
+# save(alliance_inet, file = "alliance_inet.RData")
+# load("alliance_inet.RData")
+
+# save(alliance_snet, file = "alliance_snet.RData")
+# load("alliance_snet.RData")
+```
+6 x igraph & snet alliance networks (time spells) in lists
+
+
+
+
+## binary
+
+```{r}
+# library(statnet)
+# library(intergraph)
+
+# create empty list objects
+alliance_inet.bin <- list()
+alliance_snet.bin <- list()
+
+# Loop over network list elements
+for(i in 1:length(alliance_adj2.bin)) {
+  library(igraph)
+  
+  ## Get adj matrix
+  adj <- alliance_adj2.bin[[i]]
+  
+  ## Turn to graph object from data frame edge list
+  inet <- igraph::graph_from_adjacency_matrix(adj, mode = "undirected", weighted = F, diag = FALSE) # weighted, no loops
+  
+  ## Transform from igraph object to statnet's "network" class
+  snet <- intergraph::asNetwork(inet)
+  
+  ## save inet
+  alliance_inet.bin[[paste0("t", i)]] <- inet
+  ## save snet
+  alliance_snet.bin[[paste0("t", i)]] <- snet
+  
+}
+```
+
+## save
+
+```{r}
+# save(alliance_inet.bin, file = "alliance_inet.bin.RData")
+# load("alliance_inet.bin.RData")
+
+# save(alliance_snet.bin, file = "alliance_snet.bin.RData")
+# load("alliance_snet.bin.RData")
+```
+
+
+# IV) CONFLICT NETWORKS (NO NODE COVARIATES)
+
+
+## weighted
+```{r}
+# library(statnet)
+# library(intergraph)
+
+# create empty list objects
+conflict_inet <- list()
+conflict_snet <- list()
+
+# Loop over network list elements
+for(i in 1:length(conflict_adj2)) {
+  library(igraph)
+  
+  ## Get adj matrix
+  adj <- conflict_adj2[[i]]
+  
+  ## Turn to graph object from data frame edge list
+  inet <- igraph::graph_from_adjacency_matrix(adj, mode = "undirected", weighted = TRUE, diag = FALSE) # weighted, no loops
+  
+  ## Transform from igraph object to statnet's "network" class
+  snet <- intergraph::asNetwork(inet)
+  
+  ## save inet
+  conflict_inet[[paste0("t", i)]] <- inet
+  ## save snet
+  conflict_snet[[paste0("t", i)]] <- snet
+  
+}
+```
+
+
+###### save
+```{r}
+# save(conflict_inet, file = "conflict_inet.RData")
+# load("conflict_inet.RData")
+
+# save(conflict_snet, file = "conflict_snet.RData")
+# load("conflict_snet.RData")
+```
+6 x igraph & snet conflict networks (time spells) in lists
+
+
+
+
+## binary
+
+
+```{r}
+# library(statnet)
+# library(intergraph)
+
+# create empty list objects
+conflict_inet.bin <- list()
+conflict_snet.bin <- list()
+
+# Loop over network list elements
+for(i in 1:length(conflict_adj2.bin)) {
+  library(igraph)
+  
+  ## Get adj matrix
+  adj <- conflict_adj2.bin[[i]]
+  
+  ## Turn to graph object from data frame edge list
+  inet <- igraph::graph_from_adjacency_matrix(adj, mode = "undirected", weighted = F, diag = FALSE) # weighted, no loops
+  
+  ## Transform from igraph object to statnet's "network" class
+  snet <- intergraph::asNetwork(inet)
+  
+  ## save inet
+  conflict_inet.bin[[paste0("t", i)]] <- inet
+  ## save snet
+  conflict_snet.bin[[paste0("t", i)]] <- snet
+  
+}
+```
+
+### save
+6 igraph & snet conflict networks (time spells) in lists
+```{r}
+# save(conflict_inet.bin, file = "conflict_inet.bin.RData")
+# load("conflict_inet.bin.RData")
+
+# save(conflict_snet.bin, file = "conflict_snet.bin.RData")
+# load("conflict_snet.bin.RData")
+```
+
+
+
+
+
+
+# VI) DYNAMIC NETWORKS
+
+Create dynamic network objects. None for Capdist as there were no changes between t1-t6 (same distances)
+
+## Arms
+
+Weighted
+```{r}
+# vignette("networkDynamic")
+# library(networkDynamic)
+
+iat_dyn <- networkDynamic(network.list = iat_snet, vertex.pid = "vertex.names") # argument start=1 would change time stamp start from default 0 to 1. One empty nw by default.
+iat_dyn
+summary(iat_dyn%t%1) # iat network at t1
+```
+
+Binary
+```{r}
+# load("iat_snet.bin.RData")
+iat_dyn.bin <- networkDynamic(network.list = iat_snet.bin, vertex.pid = "vertex.names") # argument start=1 would change time stamp start from default 0 to 1. One empty nw by default.
+iat_dyn.bin
+summary(iat_dyn.bin%t%1) # iat network at t1
+```
+
+### Save
+```{r}
+# save(iat_dyn, file = "iat_dyn.RData")
+# load("iat_dyn.RData")
+
+# save(iat_dyn.bin, file = "iat_dyn.bin.RData")
+# load("iat_dyn.bin.RData")
+```
+
+
+
+
+## Alliance 
+
+Weighted
+```{r}
+alliance_dyn <- networkDynamic(network.list = alliance_snet, vertex.pid = "vertex.names") # start=1 would change time stamp start from default 0 to 1. One empty nw by default.
+alliance_dyn
+summary(alliance_dyn%t%1)
+
+```
+
+Binary
+```{r}
+alliance_dyn.bin <- networkDynamic(network.list = alliance_snet.bin, vertex.pid = "vertex.names") # start=1 would change time stamp start from default 0 to 1. One empty nw by default.
+alliance_dyn.bin
+summary(alliance_dyn.bin%t%1)
+```
+
+### Save
+```{r}
+# save(alliance_dyn, file = "alliance_dyn.RData")
+# load("alliance_dyn.RData")
+
+# save(alliance_dyn.bin, file = "alliance_dyn.bin.RData")
+# load("alliance_dyn.bin.RData")
+```
+
+
+
+
+## Conflict
+
+Weighted
+```{r}
+conflict_dyn <- networkDynamic(network.list = conflict_snet, vertex.pid = "vertex.names") # start=1 would change time stamp start from default 0 to 1. One empty nw by default.
+conflict_dyn
+summary(conflict_dyn%t%1)
+
+```
+
+Binary
+```{r}
+conflict_dyn.bin <- networkDynamic(network.list = conflict_snet.bin, vertex.pid = "vertex.names") # start=1 would change time stamp start from default 0 to 1. One empty nw by default.
+conflict_dyn.bin
+summary(conflict_dyn.bin%t%1)
+```
+
+
+### Save
+```{r}
+# save(conflict_dyn, file = "conflict_dyn.RData")
+# load("conflict_dyn.RData")
+
+# save(conflict_dyn.bin, file = "conflict_dyn.bin.RData")
+# load("conflict_dyn.bin.RData")
+```
+
+
+
+# VII) IAT network without isolates 
+
+Subset network without isolates:
+Closeness centrality measures cannot deal with isolates. For later use, I'll create a subset of the network excluding isolates.
+```{r}
+## Create networks without isolates (to calculate closeness centralization, since it cannot deal with isolates, i.e. by definition no connection so no closeness possible)
+
+# library(igraph)
+# library(intergraph)
+# library(statnet)
+# library(network)
+# load("iat_inet_nocov.RData")
+# load("iat_inet.RData")
+```
+
+```{r}
+iat_inet_noiso <- list()
+iat_snet_noiso <- list()
+
+# Loop over each statnet network object in the list
+for (t in 1:length(iat_snet)) {
+  # Get the t-th statnet network object
+  net <- iat_snet[[t]]
+  
+  # Remove vertices with degree 0 (isolates)
+  isolates <- which(sna::degree(net) == 0)
+  net <- network::delete.vertices(net, isolates)
+  
+  # Convert the statnet network object to an igraph object
+  edges <- as.matrix(network::as.edgelist(net))
+  
+  # Extract node names from the statnet network object
+  node_names <- network::get.vertex.attribute(net, "vertex.names")
+  
+  # Create a vertices data frame with meaningful node names
+  vertices <- data.frame(name = node_names)
+  
+  # Ensure the edge list uses the correct node names
+  edges <- data.frame(from = node_names[edges[, 1]], to = node_names[edges[, 2]])
+  
+  igraph_net <- igraph::graph_from_data_frame(d = edges, vertices = vertices, directed = network::is.directed(net))
+  
+  # Add the resulting networks to the new lists
+  iat_inet_noiso[[paste0("t", t)]] <- igraph_net
+  iat_snet_noiso[[paste0("t", t)]] <- net
+}
+
+```
+
+
+
+```{r}
+## OLD CODE: remove isolates from statnet network objects, then copy to igraph objects object
+# library(sna)
+# library(statnet)
+# library(network)
+# library(igraph)
+# 
+# # Initialize empty lists to store the networks after removing isolates
+# iat_inet_noiso <- list()
+# iat_snet_noiso <- list()
+# 
+# # Loop over each statnet network object in the list
+# for (t in 1:length(iat_snet)) {
+#   # Get the t-th statnet network object
+#   net <- iat_snet[[t]]
+#   
+#   # Remove vertices with degree 0 (isolates)
+#   isolates <- which(sna::degree(net) == 0)
+#   net <- network::delete.vertices(net, isolates)
+#   
+#   # Convert the statnet network object to an igraph object
+#   edges <- as.matrix(network::as.edgelist(net))
+#   vertices <- data.frame(id = 1:network::network.size(net))
+#   igraph_net <- igraph::graph_from_data_frame(d = edges, vertices = vertices, directed = network::is.directed(net))
+#   
+#   # Add the resulting networks to the new lists
+#   iat_inet_noiso[[paste0("t", t)]] <- igraph_net
+#   iat_snet_noiso[[paste0("t", t)]] <- net
+# }
+
+```
+
+
+
+```{r}
+## OLD CODE: remove isolates from igraph objects, then copy to statnet network objects
+
+# # Initialize empty lists to store the networks after removing isolates
+# iat_inet_noiso <- list()
+# iat_snet_noiso <-  list()
+# # iat_inet_noiso (igraph) & iat_snet_noiso (network) are lists of network objects with isolates removed
+# 
+# 
+# # Loop over each igraph object in the list
+# for (t in 1:length(iat_inet)) {
+#   # Get the t-th igraph object
+#   net <- iat_inet[[t]]
+#   
+#   # Remove attributes i.e. covariates
+#   # net <- igraph::delete_vertex_attr(net, "name") # "name" of covariate
+#   
+#   # Remove vertices with degree 0 (isolates)
+#   net <- igraph::delete_vertices(net, V(net)[igraph::degree(net)==0])
+#   
+#   # Create a snatnet version with network class objects
+#   snet <- asNetwork(net)
+#   
+#   # Add the resulting network to the new lists
+#   iat_inet_noiso[[paste0("t", t)]] <- net
+#   iat_snet_noiso[[paste0("t", t)]] <- snet
+# }
+
+```
+
+
+
+```{r}
+## version dynamic networks
+# library(networkDynamic)
+iat_dyn_noiso <- networkDynamic(network.list = iat_snet_noiso, vertex.pid = "vertex.names")
+```
+
+```{r}
+summary(iat_inet$t1) # network with isolates, n = 157 and m = 629
+
+# without isolates, reduced from n = 157 to...
+summary(iat_inet_noiso$t1) # ...134
+summary(iat_inet_noiso$t2) # ...130
+summary(iat_inet_noiso$t3) # ...137
+summary(iat_inet_noiso$t4) # ...143
+summary(iat_inet_noiso$t5) # ...142
+summary(iat_inet_noiso$t6) # ...149
+```
+
+```{r}
+summary(iat_dyn_noiso%t%0) # t1 = 134
+summary(iat_dyn_noiso%t%1) # t1-t2 = 130
+summary(iat_dyn_noiso%t%2) # t2-t3 = 137
+summary(iat_dyn_noiso%t%3) # t3-t4 = 143
+summary(iat_dyn_noiso%t%2) # t4-t5 = 142
+summary(iat_dyn_noiso%t%2) # t5-t6 = 149
+```
+
+
+```{r}
+# save(iat_inet_noiso, file = "4_objects/iat_inet_noiso.RData")
+# load("4_objects/iat_inet_noiso.RData")
+
+# save(iat_snet_noiso, file = "4_objects/iat_snet_noiso.RData")
+# load("4_objects/iat_snet_noiso.RData")
+
+# save(iat_dyn_noiso, file = "4_objects/iat_dyn_noiso.RData")
+# load("4_objects/iat_dyn_noiso.RData")
+```
+
+ALL PREPARATIONS FINISHED. Now let's proceed to more interesting tasks, i.e. analysis.
+
+
+
+
+# OUTPUTS
+```{r}
+## CLEAN COV DFs
+# load("cov_agg.RData") # AS ONE DF
+# load("cov_list .RData") # AS LIST WITH 6 x DFS
+# load("cov_net.RData") # COV LIST MATCHED TO NETWORKS' ORDER
+```
+
+```{r}
+## IAT NETWORKS
+
+# load("iat_inet_nocov.RData")
+# load("iat_snet_nocov.RData")
+# load("iat_inet_nocov.bin.RData")
+# load("iat_snet_nocov.bin.RData")
+
+# load("iat_inet.RData") # inc. covariates
+# load("iat_snet.RData") # inc. covariates
+# load("iat_inet.bin.RData") # inc. covariates
+# load("iat_snet.bin.RData") # inc. covariates
+```
+
+```{r}
+## CONFLICT NETWORKS 
+# load("conflict_inet.RData")
+# load("conflict_snet.RData")
+# load("conflict_inet.bin.RData")
+# load("conflict_snet.bin.RData")
+
+## ALLIANCE NETWORKS
+# load("alliance_inet.RData")
+# load("alliance_snet.RData")
+# load("alliance_inet.bin.RData")
+# load("alliance_snet.bin.RData")
+```
+
+```{r}
+## DYNAMIC NETWORKS
+# load("iat_dyn.RData")
+# load("alliance_dyn.RData")
+# load("conflict_dyn.RData")
+
+# load("iat_dyn.bin.RData")
+# load("alliance_dyn.bin.RData")
+# load("conflict_dyn.bin.RData")
+```
+
+```{r}
+## IAT without isolates
+# load("iat_dyn_noiso.RData")
+# load("iat_snet_noiso.RData")
+# load("iat_inet_noiso.RData")
+```

@@ -1,0 +1,3930 @@
+---
+title: "INTERNATIONAL ARMS TRADE NETWORKS: INFERENTIAL ANALYSIS TERGM"
+author: "QN Nguyen"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: cosmo
+    highlight: tango
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+---
+
+
+# SETTINGS
+
+```{r setup, include = F}
+knitr::opts_chunk$set(fig.width=12, 
+                      fig.height=10, 
+                      fig.path='Figs/',
+                      fig.align = "center",
+                      echo=T, 
+                      warning=F, 
+                      message=F,
+                      error=F,
+                      eval=T,
+                      include=T)
+
+options(xtable.comment = FALSE, 
+        scipen = 9999,
+        tinytex.verbose = TRUE) # scipen does away with exponential notations
+
+```
+
+```{r}
+### BASIC TOOLS
+pacman::p_load(magrittr, dplyr, tidyr, sjmisc, texreg, kableExtra) # devtools, foreign, graphics, utils, scales, stargazer, qgraph, ggcorrplot, psych, stats, haven, vtable, summarytools,stringr,reshape, broom, effectsize
+###### !!!!!!!!!! DON'T USE HMISC !!!!!!!!!!!!
+
+### SNA TOOLS (ALWAYS STATNET BEFORE BTERGM)
+pacman::p_load(network, btergm) # igraph, sna, intergraph, networkDynamic, ergm, statnet, PRROC, poweRlaw, qgraph, tidygraph, htmlwidgets, speedglm, latticeExtra, statnet.common, tergm, tsna, ndtv,
+
+### VISUALIZATION
+pacman::p_load(ggplot2) # gt, ggthemes, RColorBrewer, 
+
+### SEP
+# library(igraph)
+# detach("package:igraph", unload = FALSE)
+# library(sna)
+# library(statnet)
+# detach("package:statnet", unload = FALSE)
+
+### WD
+# setwd('G:/My Drive/1. Uni/Hausarbeiten 2023/SNA_weapons/SNA_weapons_analysis_2')
+
+### CLEAN UP ENVIRONMENT
+rm(list= ls())
+
+### CLEAN SELECTIVELY
+# all <- ls()
+# keep <- c("cov_clean", "alliance_snet", "conflict_snet", "iat_snet", "m1", "m0", "m2", "m3", "m4", "stergm_0", "stergm_0_t123", "tergm_stats", "tergm_stats2")
+# rm(list = setdiff(all, keep))
+
+### CHECK PCK VERSIONS
+# sessionInfo()
+
+### UPDATE BTERGM PACK
+# packageVersion("btergm") # 1.10.11
+# install.packages("btergm")
+```
+
+# todo
+
+```{r}
+# "statnet::update_statnet()" # updates
+```
+
+
+# DATA IMPORT
+
+```{r}
+### DFS
+  # load("cov_agg.RData") # containing all node attributes in one df, all countries
+  # load("cov_list.RData") # cov_agg as list. same as cov_net
+  # load("cov_net.RData") # node attributes in network order, only 157 countries, as a list for t1-t6
+  # load("un_members.RData")
+  load("5_objects/cov_complete.RData") # inc. descriptive network stats
+  load("5_objects/cov_complete_list.RData")
+
+### CLEAN COV DF
+  load("cov_agg.RData") # containing all node attributes in one df, all countries
+  # load("cov_list.RData") # cov_agg as list. same as cov_net
+  load("cov_net.RData") # node attributes in network order, only 157 countries, as a list for t1-t6
+  # load("un_members.RData")
+
+
+## ORIGINAL IAT DYAD DF
+# load("sipri3.RData")  # dyad-year level
+# load("sipri4.RData")  # country-year level
+load("iat.pcw.RData")  # 1993-2023
+# load("iat_t_agg.RData") # aggregated to iat of dyad per t level
+
+### IGRAPH NETWORKS
+load("iat_inet.RData")
+# load("conflict_inet.RData")
+# load("alliance_inet.RData")
+# load("iat_inet.bin.RData")
+# load("conflict_inet.bin.RData")
+# load("alliance_inet.bin.RData")
+
+### STATNET NETWORKS
+load("iat_snet.RData")
+# load("alliance_snet.RData")
+# load("conflict_snet.RData")
+load("4_objects/iat_snet.bin.RData")
+load("alliance_snet.bin.RData")
+load("conflict_snet.bin.RData")
+
+### DYNAMIC NETWORKS
+load("iat_dyn.RData")
+# load("conflict_dyn.RData")
+# load("alliance_dyn.RData")
+# load("iat_dyn.bin.RData")
+# load("conflict_dyn.bin.RData")
+# load("alliance_dyn.bin.RData")
+
+### ADJ MATRICES
+load("iat_adj2.RData")
+# load("conflict_adj2.RData")
+# load("alliance_adj2.RData")
+load("capdist_adj2.RData")
+# load("capdist10_adj2.RData")
+# load("capdist100_adj2.RData")
+# load("capdist1000_adj2.RData")
+
+load("iat_adj2.bin.RData")
+# load("conflict_adj2.bin.RData")
+# load("alliance_adj2.bin.RData")
+
+
+### TIME SPELLS
+tspells <- c("1993-97","1998-02","2003-07","2008-12","2013-17","2018-23")
+# save(tspells, file = "tspells.RData")
+# load("tspells.RData")
+```
+
+
+
+# DATA PREP 
+```{r}
+iat_snetb <- iat_snet.bin
+# save(iat_snetb, file = "6_objects/iat_snetb.RData")
+load("iat_snetb.RData")
+
+conf_snetb <- conflict_snet.bin
+# save(conf_snetb, file = "6_objects/conf_snetb.RData")
+load("conf_snetb.RData")
+
+ally_snetb <- alliance_snet.bin
+# save(ally_snetb, file = "6_objects/ally_snetb.RData")
+load("ally_snetb.RData")
+
+# rm(iat_snet.bin)
+# rm(conflict_snet.bin)
+# rm(alliance_snet.bin)
+```
+
+```{r}
+# library(e1071)
+skewness(capdist_adj2[lower.tri(capdist_adj2)]) # 0.56
+
+# transform capdist with log base 2
+# capdist_log2_adj <- log(capdist_adj2,2) # in km
+# capdist_log2_adj[capdist_log2_adj == -Inf] <- 0
+# save(capdist_log2_adj, file = "6_objects/capdist_log2_adj.RData")
+load("capdist_log2_adj.RData")
+
+# capdist_log10_adj <- log(capdist_adj2,10)
+# capdist_log10_adj[capdist_log10_adj == -Inf] <- 0
+```
+
+
+
+
+# 1) THEORY & DESCRIPTIVES
+
+## Hypotheses
+
+Reciprocity dynamics do not play a big role in the arms trade network, as it is sender focused. Mainly exporters' decisions drive the network tie formation. In the case of arms trade, geopolitical concerns play a huge role. This was esp. true during the CW period. In post-CW period however, economic imperatives became increasingly important as well. Esp importers' wants and needs - which was irrelevant previpusly - became more important for tie formation as well.
+
+<br>
+
+**endogeneous effects**
+-   Hx: there are less isolates in the network than expected.
+-   H3: outdegree effect: states have on average fewer exports than expected at random (Thurner 2019), i.e. a few exporting to many
+-   H4: indegree effect: states have on average fewer imports than expected at random (Thurner 2019), i.e. many importing from a few
+-   H5: reciprocity effect (delayed): on average lower than statistically expected (Thurner 2019) --> decision to export is possible to a minority of states
+-   H7: transitivity: two states sharing an arms transfer link are more likely to start trading arms
+
+**exogeneous effects**
+-   Hx: The larger domestic econ market, the higher prob to export (ability to produce) (Thurner 2019)
+-   Hx: The larger domestic econ market, the higher prob to import (ability to purchase) (Thurner 2019)
+-   Hx: the higher military burden/exp, the higher prob to export (Wang 2023)
+-   Hx: the higher military burden/exp, the higher prob to import (Wang 2023)
+-   Hx: the more population, the higher prob to participate in weapon transfer
+-   Hx: 
+
+
+-   Hx: The more similar political regimes, the higher prob of arms transfer (Thurner 2019)
+
+-   Hx: the more conflict involvement, the higher prob to import (Thurner 2019)
+-   Hx: conflict involvement increases prob to import compared to no conflict involvement (Thurner 2019)
+-   Hx: the more involvement in wars, the higher prob to import (Thurner 2019)
+-   Hx: the more involvement in minor conflicts, the higher prob to import (Thurner 2019)
+
+-   Hx: the more coups (political instability), the higher prob to import (Thurner 2019)
+-   Hx: the more sovereignty, the higher prob to import
+-   Hx: the more territory controlled, the lower prob to import
+
+-   Hx: 
+
+
+-   H1: states that are direct allies are more likely to trade arms than non-allies (Chou 2023)
+-   H2: the more allies two states share in common, the more likely they will trade arms (Chou 2023)
+-   GDP: pos signif, esp. for tie formation, less for continuation (Lebacher 2020)
+
+**time-related effects**
+-   Hx: delayed reciprocity
+-   H6: path dependency/inertia: tendency for established links to persist (Thurner 2019)
+
+
+
+## Codebook
+
+**Dependent variable IAT**
+-   undirected edge = arm transfer
+-   incoming edge = arms import
+-   outgoing edge = arms export
+
+**Socio-economic indicators**
+-   "gdp": node's yearly av. gdp during t (nominal gdp, in USD billions)
+-   "ln_gdp": node's yearly av. gdp during t, log transformed
+-   "low_gdp": nominal gdp ranked in lower quartile (<25%)
+-   "mid_gdp": nominal gdp ranked in middle half (25-75%)
+-   "high_gdp": nominal gdp ranked in higher quartile (>75%)
+
+-   "milex": node's total military expenditure in t (in constant USD million)
+-   "milbur": node's yearly av. military burden (milex/gdp) in t (the higher the more burden, from 0-1)
+-   "low_milburden": military burden ranked in lower quartile (<25%)
+-   "mid_milburden": military burden ranked in middle half (25-75%)
+-   "high_milburden": military burden ranked in higher quartile (>75%)
+
+-   "population": node's yearly av. population (in million) during t 
+
+
+**Political indicators**
+-   "democracy": node's yearly av. vdem democracy score during (the higher, the more democratic, from 0-1)
+-   "coup": experienced coup(s) during t? (1/0) (i.e. proxy for domestic regime stability)
+-   "sovscore": node's av. yearly sovereignty score (i.e. policy independence from foreign powers) during t; the higher, the more independent (from ca 2.0 - 2.3)
+-   "territory_95": min. 95% of node's territory under its effective control during t? (1/0)
+
+
+**Conflict indicators**
+-   "n_enemies": fighting how many adversaries in violent conflict(s) during t?
+-   "d_enemies": in conflict(s) with min. one other partie during t (1/0)?
+
+-   "n_minor": fighting how many adversaries in minor conflict(s) during t?
+-   "d_minor": in minor conflict(s) with at least one other partie during t? (1/0)
+
+-   "n_war": fighting how many adversaries in minor conflict(s) during t?
+-   "d_war": in minor conflict(s) with at least one other partie during t? (1/0)
+
+-   "n_ter": fighting how many adversaries due to territory during t?
+-   "d_ter": in conflict due to territory with at least one other partie during t? (1/0)
+
+-   "n_pol": fighting how many adversaries due to politics during t?
+-   "d_pol": in conflict due to politics with at least one other partie during t? (1/0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 3) MODELS
+
+## notes & interp network terms
+
+- always load statnet before btergm, else some functions of the former might be masked.
+
+@nga:
+The btergm function need **minimum two terms** to estimate models. From the descriptive statistics, we know that the count of transitive triangles in the iat network increase consistently over time. Transitivity is thus a pervasive feature of the iat network. 
+
+So we'll use **edges & geometrically weighted edge-wise shared partners** as the two terms of the base model. (simplest possible model, the Bernoulli or Erdos-Renyi model (cf. session 1 and *Small World's*), which contains only one term to capture the density of the network as a function of a homogenous edge probability.)
+
+-   The edges term represents the baseline probability of a tie between any pair of nodes
+-   esp.OTP#n terms represent the additional probability of a tie for each additional edgewise shared partnership (ESP), where n is the number of ESPs
+
+To **save computational resources**: Since the computational burden to freely estimate the alpha coefficient for gwodegree and gwidegree is too big, I'll proceed with a fixed alpha of 0.5.
+                                                                                     By setting the decay parameter to the fixed value of 0.5, which we infer from the previous free estimation, we estimate **regular, non-curved Exponential Random Graph Models** (Hunter and Handcock, 2006 in Thiemichen 2016: 40; van der Pol 2018: 868)
+                                                                                    
+**R = number of simulations**
+Normally, 1000 is appropriate for publications. However, results do not change (by a lot) and they run forever. I'll opt for 10 iterations to save time. Also, turn off parallel computing (number of cpus) if incomp with computer specs.
+
+
+## PROBE
+
+```{r}
+# library(btergm)
+set.seed(1902) 
+# mx_b <- btergm(iat_snetb ~ edges  # density
+#              
+#       ## STRUCTURAL TERMS
+#       + gwesp(1.5, fixed=T) # nested transitivity
+#       + gwodegree(1, fixed=T) # exporter effect
+#       + gwidegree(1, fixed=T) # importer effect
+#       + mutual
+#            
+#       + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+#       + absdiff("democracy") # homop invers (0-1)
+#       + nodeocov("log2_gdp")
+#       + nodeicov("log2_gdp")
+#       + nodeocov("log2_milex")
+#       + nodeicov("log2_milex")
+#       + edgecov(capdist_log2_adj)
+#       
+#       + edgecov(ally_snetb)
+#       + edgecov(conf_snetb)
+#       # + timecov(ally_snetb, transform = sqrt) 
+#       + timecov(conf_snetb, transform = function(t) t)
+#       + timecov(transform = function(t) t) # linearly denser over time?
+#       + memory(type = "innovation", lag=1)
+# 
+# 
+#       ## SETTINGS
+#       ,R = 10, parallel = "snow", ncpus = 2)
+```
+
+```{r}
+screenreg(mx_b,override.coef = exp(coef(mx_b)),ci.test = 1,digits = 4)
+```
+
+
+
+
+## TERGM_0: m0 = gwesp term
+
+```{r}
+# detach(package:igraph)
+# library(texreg)
+# set.seed(1902)
+```
+
+```{r}
+# library(btergm)
+set.seed(1902)
+m0 <- btergm(iat_snetb ~ edges   # density
+             
+             + gwesp(1.5, fixed=T) # nested transitivity, alternativ a 0.5 = decay
+             
+             ## SETTINGS: snow = MS Windows; alternative: ncpus = detectCores()
+             ,R = 50, parallel = "snow", ncpus = 2)
+```
+
+```{r}
+summary(m0, level = 0.95) # ci 95% level by default
+screenreg(m0)
+screenreg(m0,override.coef = exp(coef(m0)),ci.test = 1,digits = 4)
+exp(m0@coef)
+# save(m0, file = "6_objects/m0.RData")
+# load("m0.RData")
+```
+
+
+## TERGM_1: m1 = m0 + structural terms
+
+Careful, it's hard to fit too many structural terms, some can lead to model degeneracy. Choose carefully to save computational resources.
+
+```{r}
+# library(btergm)
+set.seed(1902) 
+m1 <- btergm(iat_snetb ~ edges  # density
+
+     ## STRUCTURAL TERMS
+     + gwesp(1.5, fixed=T) # nested transitivity
+     + gwodegree(1, fixed=T) # exporter effect
+     + gwidegree(1, fixed=T) # importer effect
+     + mutual
+
+     ## SETTINGS
+     ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+
+```{r}
+summary(m1, level = 0.95) 
+screenreg(m1)
+screenreg(m1,override.coef = exp(coef(m1)),ci.test = 1,digits = 4)
+exp(m1@coef)
+# save(m1, file = "6_objects/m1.RData")
+load("m1.RData")
+```
+
+
+## TERGM_2: m2 = m1 + time dependencies
+
+Careful, it's hard to fit too many structural terms, some can lead to model degeneracy. Choose carefully to save computational resources.
+
+```{r}
+# library(btergm)
+set.seed(1902) 
+m2 <- btergm(iat_snetb ~ edges  # density
+
+        ## STRUCTURAL TERMS
+        + gwesp(1.5, fixed=T) # nested transitivity
+        + gwodegree(1, fixed=T) # exporter effect
+        + gwidegree(1, fixed=T) # importer effect
+        + mutual
+             
+        ##  TEMPORAL DEPENDENCIES (lag=1)  
+        + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+        + timecov(transform = function(t) t) # network linearly denser over time?
+        
+        ## SETTINGS
+        ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+
+```{r}
+summary(m2, level = 0.95) 
+screenreg(m2)
+screenreg(m2,override.coef = exp(coef(m2)),ci.test = 1,digits = 4)
+exp(m2@coef)
+# save(m2, file = "6_objects/m2.RData")
+# load("m2.RData")
+```
+
+
+## TERGM_3: m3 = m2 + edge terms
+
+```{r}
+# library(btergm)
+set.seed(1902) 
+m3 <- btergm(iat_snetb ~ edges  # density
+             
+             ## STRUCTURAL TERMS
+             + gwesp(1.5, fixed=T) # nested transitivity
+             + gwodegree(1, fixed=T) # exporter effect
+             + gwidegree(1, fixed=T) # importer effect
+             + mutual
+             
+            ##  TEMPORAL DEPENDENCIES (lag=1)  
+            + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+            + timecov(transform = function(t) t) # network linearly denser over time?
+             
+             ## EDGE LEVEL TERMS
+             + edgecov(ally_snetb)
+             + edgecov(conf_snetb)
+             + edgecov(capdist_log2_adj)
+             + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+             + absdiff("democracy") # homop invers (0-1)
+             
+             ## SETTINGS
+             ,R = 50, parallel = "snow", ncpus = 2)
+```
+
+
+```{r}
+summary(m3, level = 0.95)
+screenreg(m3)
+screenreg(m3,override.coef = exp(coef(m3)),ci.test = 1,digits = 4)
+exp(coef(m3))
+# save(m3, file = "6_objects/m3.RData")
+# load("m3.RData")
+```
+
+
+
+## TERGM_4: m4 = m3 + node term material
+
+```{r}
+# library(btergm)
+set.seed(1902) 
+m4 <- btergm(iat_snetb ~ edges  # density
+             
+             ## STRUCTURAL TERMS
+             + gwesp(1.5, fixed=T) # nested transitivity
+             + gwodegree(1, fixed=T) # exporter effect
+             + gwidegree(1, fixed=T) # importer effect
+             + mutual
+             
+             ##  TEMPORAL DEPENDENCIES (lag=1)  
+             + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+             + timecov(transform = function(t) t) # network linearly denser over time?
+             
+             ## EDGE LEVEL TERMS
+             + edgecov(ally_snetb)
+             + edgecov(conf_snetb)
+             + edgecov(capdist_log2_adj)
+             + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+             + absdiff("democracy") # homop invers (0-1)
+             
+             ## NODE TERMS
+             ### material factors
+             + nodeocov("log2_gdp")
+             + nodeicov("log2_gdp")
+             + nodeocov("log2_milex")
+             + nodeicov("log2_milex")
+             + nodeicov("log2_population") # mil individuals
+             
+             
+             ## SETTINGS
+             ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+
+```{r}
+# library(texreg)
+screenreg(m4,override.coef = exp(coef(m4)),ci.test = 1,digits = 4)
+exp(coef(m4))
+# save(m4, file = "6_objects/m4.RData")
+# load("m4.RData")
+```
+
+
+## TERGM_5: m5 = m4 + node term security
+
+### m5: final model
+```{r}
+# library(btergm)
+set.seed(1902)
+m5 <- btergm(iat_snetb ~ edges  # density
+             
+             ## STRUCTURAL TERMS
+             + gwesp(1.5, fixed=T) # nested transitivity
+             + gwodegree(1, fixed=T) # exporter effect
+             + gwidegree(1, fixed=T) # importer effect
+             + mutual
+             
+             ##  TEMPORAL DEPENDENCIES (lag=1)  
+             + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+             + timecov(transform = function(t) t) # network linearly denser over time?
+             
+             ## EDGE LEVEL TERMS
+             + edgecov(ally_snetb)
+             + edgecov(conf_snetb)
+             + edgecov(capdist_log2_adj)
+             + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+             + absdiff("democracy") # homop invers (0-1)
+             
+             ## NODE TERMS
+             ### material factors
+             + nodeocov("log2_gdp")
+             + nodeicov("log2_gdp")
+             + nodeocov("log2_milex")
+             + nodeicov("log2_milex")
+             + nodeicov("log2_population") # mil individuals
+             
+             ### stability/security
+             + nodeifactor("d_sovscore") # 1= upper 50% sov
+             + nodeifactor("d_coups")    # 1 = coup occurred during t 
+             + nodeofactor("d_inter")    # 1= intrastate conf during t
+             + nodeifactor("d_inter")
+             + nodeofactor("d_intra")    # 1= intrastate conf during t
+             + nodeifactor("d_intra")
+             
+             ## SETTINGS
+             ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+summary(m5)
+# screenreg(m5)
+# exp(coef(m5))
+# save(m5, file = "6_objects/m5.RData")
+# load("m5.RData")
+```
+
+```{r}
+# network::list.vertex.attributes(iat_snetb$t1)
+# igraph::vertex_attr_names(iat_inet$t1)
+```
+
+
+
+
+### m5a: general conflict
+```{r}
+# library(btergm)
+set.seed(1902)
+m5a <- btergm(iat_snetb ~ edges  # density
+              
+            ## STRUCTURAL TERMS
+            + gwesp(1.5, fixed=T) # nested transitivity
+            + gwodegree(1, fixed=T) # exporter effect
+            + gwidegree(1, fixed=T) # importer effect
+            + mutual
+            
+            ##  TEMPORAL DEPENDENCIES (lag=1)  
+            + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+            + timecov(transform = function(t) t) # network linearly denser over time?
+            
+            ## EDGE LEVEL TERMS
+            + edgecov(ally_snetb)
+            + edgecov(conf_snetb)
+            + edgecov(capdist_log2_adj)
+            + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+            + absdiff("democracy") # homop invers (0-1)
+            
+            ## NODE TERMS
+            ### material factors
+            + nodeocov("log2_gdp")
+            + nodeicov("log2_gdp")
+            + nodeocov("log2_milex")
+            + nodeicov("log2_milex")
+            + nodeicov("log2_population") # mil individuals
+            
+            ### stability/security
+            + nodeifactor("d_sovscore") # 1= upper 50% sov
+            + nodeifactor("d_coups")    # 1 = coup occurred during t 
+            
+            + nodeofactor("d_conf")     # 1 = had militarized conflict during t
+            + nodeifactor("d_conf")
+              
+            ## SETTINGS
+            ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+# summary(m5a, level = 0.95) 
+# screenreg(m5a)
+# exp(coef(m5a))
+# save(m5a, file = "6_objects/m5a.RData")
+# load("m5a.RData")
+```
+
+
+### m5b: international conflict
+```{r}
+# library(btergm)
+set.seed(1902)
+
+m5b <- btergm(iat_snetb ~ edges  # density
+              
+              ## STRUCTURAL TERMS
+              + gwesp(1.5, fixed=T) # nested transitivity
+              + gwodegree(1, fixed=T) # exporter effect
+              + gwidegree(1, fixed=T) # importer effect
+              + mutual
+              
+              ##  TEMPORAL DEPENDENCIES (lag=1)  
+              + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+              + timecov(transform = function(t) t) # network linearly denser over time?
+              
+              ## EDGE LEVEL TERMS
+              + edgecov(ally_snetb)
+              + edgecov(conf_snetb)
+              + edgecov(capdist_log2_adj)
+              + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+              + absdiff("democracy") # homop invers (0-1)
+              
+              ## NODE TERMS
+              ### material factors
+              + nodeocov("log2_gdp")
+              + nodeicov("log2_gdp")
+              + nodeocov("log2_milex")
+              + nodeicov("log2_milex")
+              + nodeicov("log2_population") # mil individuals
+              
+              ### stability/security
+              + nodeifactor("d_sovscore") # 1= upper 50% sov
+              + nodeifactor("d_coups")    # 1 = coup occurred during t 
+              
+              + nodeofactor("d_inter") # 1= interstate conf during t
+              + nodeifactor("d_inter")
+              
+              ## SETTINGS
+              ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+# summary(m5b, level = 0.95) 
+# screenreg(m5b)
+# exp(coef(m5b))
+# save(m5b, file = "6_objects/m5b.RData")
+# load("m5b.RData")
+```
+
+
+### m5c: intranational conflict
+```{r}
+# library(btergm)
+set.seed(1902)
+m5c <- btergm(iat_snetb ~ edges  # density
+              
+              ## STRUCTURAL TERMS
+              + gwesp(1.5, fixed=T) # nested transitivity
+              + gwodegree(1, fixed=T) # exporter effect
+              + gwidegree(1, fixed=T) # importer effect
+              + mutual
+              
+              ##  TEMPORAL DEPENDENCIES (lag=1)  
+              + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+              + timecov(transform = function(t) t) # network linearly denser over time?
+              
+              ## EDGE LEVEL TERMS
+              + edgecov(ally_snetb)
+              + edgecov(conf_snetb)
+              + edgecov(capdist_log2_adj)
+              + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+              + absdiff("democracy") # homop invers (0-1)
+              
+              ## NODE TERMS
+              ### material factors
+              + nodeocov("log2_gdp")
+              + nodeicov("log2_gdp")
+              + nodeocov("log2_milex")
+              + nodeicov("log2_milex")
+              + nodeicov("log2_population") # mil individuals
+              
+              ### stability/security
+              + nodeifactor("d_sovscore") # 1= upper 50% sov
+              + nodeifactor("d_coups")    # 1 = coup occurred during t 
+              
+              + nodeofactor("d_intra")    # 1= intrastate conf during t
+              + nodeifactor("d_intra")
+              
+              
+              ## SETTINGS
+              ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+summary(m5c)
+# screenreg(m5c)
+# exp(coef(m5c))
+# save(m5c, file = "6_objects/m5c.RData")
+# load("m5c.RData")
+```
+
+
+
+
+
+### m5d: territoral conflict
+```{r}
+# library(btergm)
+set.seed(1902)
+
+m5d <- btergm(iat_snetb ~ edges  # density
+              
+             ## STRUCTURAL TERMS
+             + gwesp(1.5, fixed=T) # nested transitivity
+             + gwodegree(1, fixed=T) # exporter effect
+             + gwidegree(1, fixed=T) # importer effect
+             + mutual
+             
+             ##  TEMPORAL DEPENDENCIES (lag=1)  
+             + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+             + timecov(transform = function(t) t) # network linearly denser over time?
+             
+             ## EDGE LEVEL TERMS
+             + edgecov(ally_snetb)
+             + edgecov(conf_snetb)
+             + edgecov(capdist_log2_adj)
+             + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+             + absdiff("democracy") # homop invers (0-1)
+             
+             ## NODE TERMS
+             ### material factors
+             + nodeocov("log2_gdp")
+             + nodeicov("log2_gdp")
+             + nodeocov("log2_milex")
+             + nodeicov("log2_milex")
+             + nodeicov("log2_population") # mil individuals
+             
+             ### stability/security
+             + nodeifactor("d_sovscore") # 1= upper 50% sov
+             + nodeifactor("d_coups")    # 1 = coup occurred during t 
+              
+             + nodeofactor("d_ter") # 1= ter conf during t
+             + nodeifactor("d_ter")
+              
+              ## SETTINGS
+              ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+# summary(m5d, level = 0.95) 
+# screenreg(m5d)
+# exp(coef(m5d))
+# save(m5d, file = "6_objects/m5d.RData")
+# load("m5d.RData")
+```
+
+
+
+### m5e: political conflict
+```{r}
+# library(btergm)
+set.seed(1902)
+
+m5e <- btergm(iat_snetb ~ edges  # density
+              
+             ## STRUCTURAL TERMS
+             + gwesp(1.5, fixed=T) # nested transitivity
+             + gwodegree(1, fixed=T) # exporter effect
+             + gwidegree(1, fixed=T) # importer effect
+             + mutual
+             
+             ##  TEMPORAL DEPENDENCIES (lag=1)  
+             + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+             + timecov(transform = function(t) t) # network linearly denser over time?
+             
+             ## EDGE LEVEL TERMS
+             + edgecov(ally_snetb)
+             + edgecov(conf_snetb)
+             + edgecov(capdist_log2_adj)
+             + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+             + absdiff("democracy") # homop invers (0-1)
+             
+             ## NODE TERMS
+             ### material factors
+             + nodeocov("log2_gdp")
+             + nodeicov("log2_gdp")
+             + nodeocov("log2_milex")
+             + nodeicov("log2_milex")
+             + nodeicov("log2_population") # mil individuals
+             
+             ### stability/security
+             + nodeifactor("d_sovscore") # 1= upper 50% sov
+             + nodeifactor("d_coups")    # 1 = coup occurred during t 
+              
+             + nodeofactor("d_pol") # 1= pol conf during t
+             + nodeifactor("d_pol")
+              
+              ## SETTINGS
+              ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+# summary(m5e, level = 0.95) 
+# screenreg(m5e)
+# exp(coef(m5e))
+# save(m5e, file = "6_objects/m5e.RData")
+# load("m5e.RData")
+```
+
+
+
+### m5f: major conflict (min. 1000 deaths)
+```{r}
+# library(btergm)
+set.seed(1902)
+m5f <- btergm(iat_snetb ~ edges  # density
+              
+             ## STRUCTURAL TERMS
+             + gwesp(1.5, fixed=T) # nested transitivity
+             + gwodegree(1, fixed=T) # exporter effect
+             + gwidegree(1, fixed=T) # importer effect
+             + mutual
+             
+             ##  TEMPORAL DEPENDENCIES (lag=1)  
+             + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+             + timecov(transform = function(t) t) # network linearly denser over time?
+             
+             ## EDGE LEVEL TERMS
+             + edgecov(ally_snetb)
+             + edgecov(conf_snetb)
+             + edgecov(capdist_log2_adj)
+             + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+             + absdiff("democracy") # homop invers (0-1)
+             
+             ## NODE TERMS
+             ### material factors
+             + nodeocov("log2_gdp")
+             + nodeicov("log2_gdp")
+             + nodeocov("log2_milex")
+             + nodeicov("log2_milex")
+             + nodeicov("log2_population") # mil individuals
+             
+             ### stability/security
+             + nodeifactor("d_sovscore") # 1= upper 50% sov
+             + nodeifactor("d_coups")    # 1 = coup occurred during t 
+              
+             + nodeofactor("d_war") # 1= pol conf during t
+             + nodeifactor("d_war")
+              
+              ## SETTINGS
+              ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+# summary(m5f, level = 0.95) 
+# screenreg(m5f)
+# exp(coef(m5f))
+# save(m5f, file = "6_objects/m5f.RData")
+# load("m5f.RData")
+```
+
+
+### m5g: minor conflict (<1000 deaths)
+```{r}
+# library(btergm)
+set.seed(1902)
+
+m5g <- btergm(iat_snetb ~ edges  # density
+              
+             ## STRUCTURAL TERMS
+             + gwesp(1.5, fixed=T) # nested transitivity
+             + gwodegree(1, fixed=T) # exporter effect
+             + gwidegree(1, fixed=T) # importer effect
+             + mutual
+             
+             ##  TEMPORAL DEPENDENCIES (lag=1)  
+             + memory(type = "innovation", lag=1) # easy/hard to form new trade ties?
+             + timecov(transform = function(t) t) # network linearly denser over time?
+             
+             ## EDGE LEVEL TERMS
+             + edgecov(ally_snetb)
+             + edgecov(conf_snetb)
+             + edgecov(capdist_log2_adj)
+             + nodematch("cat_gdp", diff=T) # homop: <25%; 25-75%; >75% in gdp distr
+             + absdiff("democracy") # homop invers (0-1)
+             
+             ## NODE TERMS
+             ### material factors
+             + nodeocov("log2_gdp")
+             + nodeicov("log2_gdp")
+             + nodeocov("log2_milex")
+             + nodeicov("log2_milex")
+             + nodeicov("log2_population") # mil individuals
+             
+             ### stability/security
+             + nodeifactor("d_sovscore") # 1= upper 50% sov
+             + nodeifactor("d_coups")    # 1 = coup occurred during t 
+              
+             + nodeofactor("d_minor") # 1= pol conf during t
+             + nodeifactor("d_minor")
+              
+              ## SETTINGS
+              ,R = 50, parallel = "snow", ncpus = 2)
+
+
+```
+
+```{r}
+# summary(m5g, level = 0.95) 
+# screenreg(m5g)
+# exp(coef(m5g))
+# save(m5g, file = "6_objects/m5g.RData")
+# load("m5g.RData")
+```
+
+
+
+# 4) RESULTS
+
+Source code: https://github.com/leifeld/btergm/blob/master/R/btergm.R
+
+```{r}
+# m4@formula
+# m5@formula
+# screenreg(list(m4,m5),override.coef = exp(coef(m0)),ci.test = 1,digits = 4)
+```
+
+
+
+
+## df: bind all logit model objects
+
+Apply: get list of or model objects
+```{r}
+# logm05 <- list(m0, m1, m2, m3, m4, m5)
+# names(logm05) <- c("m0", "m1", "m2", "m3", "m4", "m5")
+
+# save(logm05, file = "6_objects/logm05.RData")
+# load("6_objects/logm05.RData")
+```
+
+```{r}
+# logm5ag <- list(m5a,m5b,m5c,m5d,m5e,m5f,m5g)
+# names(logm5ag) <- c("m5a", "m5b", "m5c", "m5d", "m5e", "m5f", "m5g")
+
+# save(logm5ag, file = "6_objects/logm5ag.RData")
+# load("6_objects/logm5ag.RData")
+```
+
+```{r}
+logm <- list(m0, m1, m2, m3, m4, m5, m5a,m5b,m5c,m5d,m5e,m5f,m5g)
+names(logm) <- c("m0", "m1", "m2", "m3", "m4", "m5", "m5a", "m5b", "m5c", "m5d", "m5e", "m5f", "m5g")
+
+# logm$m5g@coef
+# save(logm, file = "6_objects/logm.RData")
+load("6_objects/logm.RData")
+```
+
+
+
+
+
+
+## df: bind all or model objects
+
+Function: OR model objects: override values with e^ (i.e. exp())
+```{r}
+library(btergm)
+# library(DescTools)
+# get an OR version of the model by overriding values
+get_orm <- function(model) {
+    ## OVERRIDE VALUES WITH EXP()
+    or_model <- model # copy
+    or_model@boot$t0 <- exp(or_model@boot$t0) # override coef i.e. "Estimate"
+    or_model@coef <- exp(or_model@coef) # override coef i.e. "Estimate"
+    or_model@boot$t <- exp(or_model@boot$t) # override bootstrap sample
+  return(or_model)
+}
+
+# save(get_orm, file = "6_objects/6_objects/get_orm.RData")
+# load("6_objects/get_orm.RData")
+```
+
+Apply: get list of or model objects
+```{r}
+orm <- lapply(logm, get_orm)
+# orm$m5g@coef
+# save(orm, file = "6_objects/orm.RData")
+# load("orm.RData")
+```
+
+```{r}
+library(texreg)
+screenreg(orm$m5g,ci.test = 1,digits = 4) # override.coef = exp(coef(m5g))
+```
+
+
+
+
+
+## df: all coefs
+
+function to extract all model coefs and bind them into one df,
+including new variables such as labels etc etc
+```{r}
+
+### ALT
+# library(DescTools)
+# library(dplyr)
+# library(purrr)
+# library(tidyr)
+# library(broom)
+# library(forcats)
+# 
+# # ## extract or
+# prep_data <- function(modelobject, modelname) {
+#   model_name <- deparse(substitute(modelobject))
+# 
+#   ## OR coefs
+#   tidy_or <- tidy(modelobject, exponentiate = TRUE, conf.int = TRUE) %>%
+#     mutate(
+#       # stats
+#       r_or = round(estimate,3),
+#       r_or_lci = round(conf.low,3),
+#       r_or_uci = round(conf.high,3),
+#       stars = ifelse(conf.low <= 1 & conf.high >= 1, "", "*"),
+#       
+#       convert_label1 = as.factor(ifelse(estimate < 1, "Odds ratio < 1", "Odds ratio > 1")),
+#       convert_label2 = as.factor(ifelse(estimate < 1, "1/Odds Ratio", "Odds Ratio")),
+#       convert_label3 = case_when(convert_label2 == "1/Odds Ratio" ~ "Odds Ratio (- |1/Odds Ratio|)",
+#                                  convert_label2 == "Odds Ratio" ~ "Odds Ratio"),
+#       converted_stat = ifelse(estimate < 1, -(1 / estimate), estimate),
+#       r_converted_stat = round(converted_stat,3),
+#       r_prob = round(r_or / (1 + r_or), 3),
+#       r_prob_lci = round(r_or_lci / (1 + r_or_lci), 3),
+#       r_prob_uci = round(r_or_uci / (1 + r_or_uci), 3),
+#       
+# 
+#       # label
+#       converted_display = ifelse(estimate < 1,
+#                                   paste(sprintf("%.3f", estimate), "(", sprintf("%.3f", converted_stat), ")"),
+#                                   sprintf("%.3f", estimate)),
+#       converted_display2 = ifelse(estimate < 1,
+#                                   paste("(", sprintf("%.3f", converted_stat), ")"),
+#                                   paste("")),
+#       model = modelname
+#       # converted_display2 = ifelse(estimate > 1, "", sprintf("(%.2f)", round(-(1 / estimate), 2))), # not relevant
+#       # modelname = paste(model_name), # paste("model", model_name)
+#       # across(where(is.numeric), ~ round(., 2))
+#     ) %>%
+#     rename(or = estimate, or_lci = conf.low, or_uci = conf.high)
+#   tidy_or$n_obs <- modelobject@nobs
+# 
+#   ## logits coefs
+#   tidy_logit <- tidy(modelobject, conf.int = TRUE) %>%
+#     mutate(logit_label = as.factor(ifelse(estimate < 0, "negative", "positiv"))) %>%
+#     rename(logit = estimate, logit_lci = conf.low, logit_uci = conf.high) %>%
+#     mutate(r_logit = round(logit,3),
+#            r_logit_lci = round(logit_lci,3),
+#            r_logit_uci = round(logit_uci,3)) %>%
+#     select(-term)
+#   
+# 
+#   ## combine both in df
+#   tidy_df <- cbind(tidy_or, tidy_logit)
+#   return(tidy_df)
+# }
+# 
+# # save(prep_data, file = "6_objects/prep_data.RData")
+# load("6_objects/prep_data.RData")
+```
+
+
+
+
+```{r}
+# library(DescTools)
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(broom)
+library(forcats)
+tidy(m0) # check tidy() function
+
+
+## EXTRACT COEFS
+prep_data <- function(modelobject, modelname) {
+  
+  ## MODEL NAMES
+  model_name <- deparse(substitute(modelobject))
+
+  ## OR COEFS
+  tidy_or <- tidy(modelobject, exponentiate = TRUE, conf.int = TRUE) %>%
+    mutate(
+      # stats
+      r_or = round(estimate,2),
+      r_or_lci = round(conf.low,2),
+      r_or_uci = round(conf.high,2),
+      stars = ifelse(conf.low <= 1 & conf.high >= 1, " ", "*"),
+      
+      convert_label1 = as.factor(ifelse(estimate < 1, "Odds ratio < 1", "Odds ratio > 1")),
+      convert_label2 = as.factor(ifelse(estimate < 1, "1/Odds Ratio", "Odds Ratio")),
+      convert_label3 = case_when(convert_label2 == "1/Odds Ratio" ~ "Odds Ratio (- |1/Odds Ratio|)",
+                                 convert_label2 == "Odds Ratio" ~ "Odds Ratio"),
+      converted_stat = ifelse(estimate < 1, -(1 / estimate), estimate),
+      r_converted_stat = round(converted_stat,2),
+      r_prob = round(r_or / (1 + r_or), 2),
+      r_prob_lci = round(r_or_lci / (1 + r_or_lci), 2),
+      r_prob_uci = round(r_or_uci / (1 + r_or_uci), 2),
+      
+      # label
+      converted_display = ifelse(estimate < 1,
+                                  paste(sprintf("%.2f", estimate), "(", sprintf("%.2f", converted_stat), ")"),
+                                  sprintf("%.2f", estimate)),
+      converted_display2 = ifelse(estimate < 1,
+                                  paste("(", sprintf("%.2f", converted_stat), ")"),
+                                  paste("")),
+      or_display = paste(sprintf("%.2f", r_or),"[", sprintf("%.2f", r_or_lci), ";", sprintf("%.2f", r_or_uci), "]"),
+      or_display2 = paste(sprintf("%.2f", r_or),"[", sprintf("%.2f", r_or_lci), ";", sprintf("%.2f", r_or_uci), "]", stars),
+      or_display3 = paste(sprintf("%.2f", r_or),"[", sprintf("%.2f", r_or_lci), ";", sprintf("%.2f", r_or_uci), "]",stars, " ", converted_display2),
+      model = modelname) %>% 
+      # converted_display2 = ifelse(estimate > 1, "", sprintf("(%.2f)", round(-(1 / estimate), 2))), # not relevant
+      # modelname = paste(model_name), # paste("model", model_name)
+      # across(where(is.numeric), ~ round(., 2))
+     #%>%
+    dplyr::rename(or = estimate, or_lci = conf.low, or_uci = conf.high)
+    
+  tidy_or$m_obs <- modelobject@nobs # number of arms trade ties
+  tidy_or$n_obs <- 157 # 157 countries in the network
+
+  
+  
+  # LOGITS COEFS
+  tidy_logit <- tidy(modelobject, conf.int = TRUE) %>%
+    mutate(r_logit = round(estimate,2),
+           r_logit_lci = round(conf.low,2),
+           r_logit_uci = round(conf.high,2),
+           logit_display = paste(r_logit,"[", r_logit_lci, ";", r_logit_uci, "]"),
+           logit_label = as.factor(ifelse(estimate < 0, "negative", "positiv"))) %>%
+    dplyr::rename(logit = estimate, logit_lci = conf.low, logit_uci = conf.high) %>%
+    select(-term)
+  # label: logit = estimate, logit_lci = conf.low, logit_uci = conf.high
+  
+
+  ## combine both in df
+  tidy_df <- cbind(tidy_or,tidy_logit)
+  return(tidy_df)
+}
+
+
+# save(prep_data, file = "6_objects/prep_data.RData")
+load("6_objects/prep_data.RData") # backup
+```
+
+
+
+apply function and combine all model coefs (m0-m5)
+```{r}
+library(dplyr)
+library(magrittr)
+library(tidyr)
+library(purrr)
+library(broom)
+
+allm <- rbind(
+  prep_data(m0, "Model 0"),
+  prep_data(m1, "Model 1"),
+  prep_data(m2, "Model 2"),
+  prep_data(m3, "Model 3"),
+  prep_data(m4, "Model 4"),
+  prep_data(m5, "Model 5"),
+  prep_data(m5a, "Model 5a"),
+  prep_data(m5b, "Model 5b"),
+  prep_data(m5c, "Model 5c"),
+  prep_data(m5d, "Model 5d"),
+  prep_data(m5e, "Model 5e"),
+  prep_data(m5f, "Model 5f"),
+  prep_data(m5g, "Model 5g")) 
+
+
+```
+
+
+
+
+```{r}
+network_effects <- c(
+  "Density (edges)", 
+  "Nested transitivity (GW-ESP)", 
+  "Exporter effect (GW-outdegree)", 
+  "Importer effect (GW-indegree)", 
+  "Mutual trade")
+
+time_dependencies <- c(
+  "New arms trade tie, tendency over t", 
+  "Arms trade tie, linear growth over t")
+
+dyadic_effects <- c(
+  "Relation: allied (1 = yes)",
+  "Relation: armed conflict (1 = yes)",  
+  "Log2 geographic distance", 
+  "Homophily: GDP lower 25%", 
+  "Homophily: GDP middle 50%", 
+  "Homophily: GDP upper 25%", 
+  "Polity score absolute difference")
+
+nodal_effects_mat <- c(
+  "Export: Log2 GDP", 
+  "Import: Log2 GDP", 
+  "Export: Log2 military expenditure", 
+  "Import: Log2 military expenditure", 
+  "Import: Log2 population")
+
+nodal_effects_sec <- c(
+  "Import: Sovereignty level (1=high, 0=low)", 
+  "Import: Coup incidence (1 = yes)",
+  "Export: Interstate conflict (1 = yes)",
+  "Import: Interstate conflict (1 = yes)",
+  "Export: Intrastate conflict (1 = yes)", 
+  "Import: Intrastate conflict (1 = yes)",
+  "Export: Armed conflict (1 = yes)",
+  "Import: Armed conflict (1 = yes)",
+  "Export: Conflict issue, territory (1 = yes)",
+  "Import: Conflict issue, territory (1 = yes)",
+  "Export: Conflict issue, government (1 = yes)",
+  "Import: Conflict issue, government (1 = yes))",
+  "Export: War, min. 1000 deaths (1 = yes)",
+  "Import: War, min. 1000 deaths) (1 = yes)",
+  "Export: Minor conflict, max. 999 deaths) (1 = yes)",
+  "Import: Minor conflict, i.e. max. 999 deaths) (1 = yes)")
+
+```
+
+```{r}
+# allm$term %>% unique()
+
+# library(forcats)
+allm <- allm %>% 
+  # create a factor identifier
+  dplyr::mutate(term_cat = case_when(term == "edges" ~ 1,
+                                     term == "gwesp.OTP.fixed.1.5" ~ 2,
+                                     term == "gwodeg.fixed.1" ~ 3,
+                                     term == "gwideg.fixed.1"~ 4,
+                                     term == "mutual" ~ 5,
+                                     term == "edgecov.memory[[i]]" ~ 6,
+                                     term == "edgecov.timecov1[[i]]" ~ 7,
+                                     term == "edgecov.ally_snetb[[i]]" ~ 8,
+                                     term == "edgecov.conf_snetb[[i]]" ~ 9,
+                                     term == "edgecov.capdist_log2_adj[[i]]" ~ 10,
+                                     term == "nodematch.cat_gdp.1" ~ 11,
+                                     term == "nodematch.cat_gdp.2" ~ 12,
+                                     term == "nodematch.cat_gdp.3" ~ 13,
+                                     term == "absdiff.democracy" ~ 14,
+                                     term == "nodeocov.log2_gdp" ~ 15,
+                                     term == "nodeicov.log2_gdp" ~ 16,
+                                     term == "nodeocov.log2_milex" ~ 17,
+                                     term == "nodeicov.log2_milex" ~ 18,
+                                     term == "nodeicov.log2_population" ~ 19,
+                                     term == "nodeifactor.d_sovscore.1" ~ 20,
+                                     term == "nodeifactor.d_coups.1" ~ 21,
+                                     term == "nodeofactor.d_inter.1" ~ 22,
+                                     term == "nodeifactor.d_inter.1" ~ 23,
+                                     term == "nodeofactor.d_intra.1" ~  24,
+                                     term == "nodeifactor.d_intra.1" ~ 25,
+                                     term == "nodeofactor.d_conf.1" ~ 26,
+                                     term == "nodeifactor.d_conf.1" ~ 27,
+                                     term == "nodeofactor.d_ter.1" ~ 28,
+                                     term == "nodeifactor.d_ter.1" ~ 29,
+                                     term == "nodeofactor.d_pol.1" ~ 30,
+                                     term == "nodeifactor.d_pol.1" ~ 31,
+                                     term == "nodeofactor.d_war.1" ~ 32,
+                                     term == "nodeifactor.d_war.1" ~ 33,
+                                     term == "nodeofactor.d_minor.1" ~ 34,
+                                     term == "nodeifactor.d_minor.1" ~ 35,
+                                     ),
+                term_cat = as.factor(term_cat)
+                )
+
+# unique(allm$term_cat)
+
+```
+
+
+```{r}
+# neu: data prep
+allm <- allm %>%
+  # mutate(term = fct_relevel(term, c("edges",
+  #                                   "gwesp.OTP.fixed.1.5",
+  #                                   "gwodeg.fixed.1",
+  #                                   "gwideg.fixed.1",
+  #                                   "mutual",
+  #                                   "edgecov.memory[[i]]",
+  #                                   "edgecov.timecov1[[i]]",
+  #                                   "edgecov.ally_snetb[[i]]",
+  #                                   "edgecov.conf_snetb[[i]]",
+  #                                   "edgecov.capdist_log2_adj[[i]]",
+  #                                   "nodematch.cat_gdp.1",
+  #                                   "nodematch.cat_gdp.2",
+  #                                   "nodematch.cat_gdp.3",
+  #                                   "absdiff.democracy",
+  #                                   "nodeocov.log2_gdp",
+  #                                   "nodeicov.log2_gdp",
+  #                                   "nodeocov.log2_milex",
+  #                                   "nodeicov.log2_milex",
+  #                                   "nodeicov.log2_population",
+  #                                   "nodeifactor.d_sovscore.1",
+  #                                   "nodeifactor.d_coups.1",
+  #                                   "nodeofactor.d_inter.1",
+  #                                   "nodeifactor.d_inter.1",
+  #                                   "nodeofactor.d_intra.1",
+  #                                   "nodeifactor.d_intra.1"
+  #                                   ))) %>%
+  mutate(term_ori = term) %>% 
+  mutate(term = case_when(
+    term_cat == 1 ~ "Density (edges)", 
+    term_cat == 2 ~ "Nested transitivity (GW-ESP)", 
+    term_cat == 3 ~ "Exporter effect (GW-outdegree)", 
+    term_cat == 4 ~ "Importer effect (GW-indegree)", 
+    term_cat == 5 ~ "Mutual trade", 
+    term_cat == 6 ~ "New arms trade tie, tendency over t", 
+    term_cat == 7 ~ "Arms trade tie, linear growth over t", 
+    term_cat == 8 ~ "Relation: allied (1 = yes)",
+    term_cat == 9 ~ "Relation: armed conflict (1 = yes)", 
+    term_cat == 10 ~ "Log2 geographic distance", 
+    term_cat == 11 ~ "Homophily: GDP lower 25%", 
+    term_cat == 12 ~ "Homophily: GDP middle 50%", 
+    term_cat == 13 ~ "Homophily: GDP upper 25%", 
+    term_cat == 14 ~ "Polity score absolute difference", 
+    term_cat == 15 ~ "Export: Log2 GDP",  
+    term_cat == 16 ~ "Import: Log2 GDP", 
+    term_cat == 17 ~ "Export: Log2 military expenditure",
+    term_cat == 18 ~ "Import: Log2 military expenditure",
+    term_cat == 19 ~ "Import: Log2 population",
+    term_cat == 20 ~ "Import: Sovereignty level (1=high, 0=low)",
+    term_cat == 21 ~ "Import: Coup incidence (1 = yes)",
+    term_cat == 22 ~ "Export: Interstate conflict (1 = yes)",
+    term_cat == 23 ~ "Import: Interstate conflict (1 = yes)",
+    term_cat == 24 ~ "Export: Intrastate conflict (1 = yes)",
+    term_cat == 25 ~ "Import: Intrastate conflict (1 = yes)",
+    term_cat == 26 ~ "Export: Armed conflict (1 = yes)",
+    term_cat == 27 ~ "Import: Armed conflict (1 = yes)",
+    term_cat == 28 ~ "Export: Conflict issue, territory (1 = yes)",
+    term_cat == 29 ~ "Import: Conflict issue, territory (1 = yes)",
+    term_cat == 30 ~ "Export: Conflict issue, government (1 = yes)",
+    term_cat == 31 ~ "Import: Conflict issue, government (1 = yes)",
+    term_cat == 32 ~ "Export: War, min. 1000 deaths (1 = yes)",
+    term_cat == 33 ~ "Import: War, min. 1000 deaths) (1 = yes)",
+    term_cat == 34 ~ "Export: Minor conflict, max. 999 deaths) (1 = yes)",
+    term_cat == 35 ~ "Import: Minor conflict, i.e. max. 999 deaths) (1 = yes)",
+  )) %>%
+  mutate(variable_group = case_when(
+    term %in% network_effects ~ "Network effects",
+    term %in% time_dependencies ~ "Time dependencies",
+    term %in% dyadic_effects ~ "Dyadic effects",
+    term %in% nodal_effects_mat ~ "Nodal effects: material factors",
+    term %in% nodal_effects_sec ~ "Nodal effects: stability factors")) %>%
+  mutate(term = as.factor(term),
+       convert_label1 = as.factor(convert_label1),
+       convert_label2 = as.factor(convert_label2),
+       model = as.factor(model),
+       logit_label = as.factor(logit_label),
+       term_cat = as.factor(term_cat),
+       term_ori = as.factor(term_ori),
+       variable_group = as.factor(variable_group)) # %>% 
+  # mutate(model = case_when(model == "model 0" ~ "Model 0"
+  #                          ,model ==  "model 1" ~ "Model 1" 
+  #                          ,model ==  "model 2" ~ "Model 2"
+  #                          ,model ==  "model 3" ~ "Model 3"
+  #                          ,model ==  "model 4" ~ "Model 4"
+  #                          ,model ==  "model 5" ~ "Model 5"
+  #                          ,model ==  "model 5a" ~ "Model 5a"
+  #                          ,model ==  "model 5b" ~ "Model 5b"
+  #                          ,model ==  "model 5c" ~ "Model 5c"
+  #                          ,model ==  "model 5d" ~ "Model 5d"
+  #                          ,model ==  "model 5e" ~ "Model 5e"
+  #                          ,model ==  "model 5f" ~ "Model 5f"
+  #                          ,model ==  "model 5g" ~ "Model 5g"))
+  
+# names(allm)
+```
+
+
+## save
+```{r}
+# save(allm, file = "6_objects/allm.RData")
+load("6_objects/allm.RData")
+```
+
+
+
+## XXX interpretation
+
+### m5xx
+```{r}
+names(allm)
+
+allm_sub <- allm %>% 
+  select(model, variable_group, term, r_logit, converted_display, stars) # r_or, r_converted_stat
+
+allm_sub5 <- allm_sub %>% 
+  filter(model == "Model 5") %>%
+  select(-model)
+
+allm_sub5ag <- allm_sub %>% 
+  filter(model == "Model 5a" |
+         model == "Model 5b" |
+         model == "Model 5c" |
+         model == "Model 5d" |
+         model == "Model 5e" |
+         model == "Model 5f" |
+         model == "Model 5g"
+         )
+
+# save(allm_sub, file = "6_objects/allm_sub.RData")
+# save(allm_sub5, file = "6_objects/allm_sub5.RData")
+# save(allm_sub5ag, file = "6_objects/allm_sub5ag.RData")
+# load("6_objects/allm_sub.RData")
+# load("6_objects/allm_sub5.RData")
+# load("6_objects/allm_sub5ag.RData")
+```
+
+```{r}
+tbl_m5a <- allm_sub5
+tbl_m5a$variable_group <- as.character(tbl_m5a$variable_group)
+rep_effgroup <- c(2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24, 25)
+tbl_m5a$variable_group[rep_effgroup] <- ""
+cnames <-  c("Effect Group", "Term", "Logit", "OR ( - 1/OR )", "")
+names(tbl_m5a) <- cnames
+```
+
+```{r}
+# library("magick")
+# library("webshot2")
+# library("htmlwidgets")
+# library(kableExtra)
+# update.packages("magick")
+# update.packages("webshot2")
+# webshot2::install_phantomjs()
+# webshot2::webshot("test.html", "test.png") # convert pdf to image
+
+
+# colnames(tbl_m5a)[4] <- paste0("xxx", footnote_marker_number(3)) # add footnote reference to a part of the table e.g. header, text etc. Here is it the 4th column
+
+tbl_m5 <- tbl_m5a %>%
+  kbl(format = "html",bookstab=T,escape=F,caption = "Full Model (Model 5)", align = "l") %>%
+  kable_classic(full_width = F, html_font = "Arial") %>%
+  kable_styling(bootstrap_options = c("striped","condensed","hover"), font_size = 11) %>%
+  row_spec(0, color = "black", bold =T, font_size = 11, background = "lightgray") %>%
+  # column_spec(1, color = "black", bold =T) %>%
+  column_spec(1, color = "black", bold =T) %>% # , width = "2.7cm"
+  # column_spec(2:6, width = "1.8cm") %>%
+  # add_footnote(.,
+  #          c("N = 157 across the 6 networks",
+  #            "Data source: SIPRI Arms Transfers Database (2023)",
+  #            "Components here refers to strong components"),notation = "number") %>% #
+  # col.names = c("Effect Group", "Term", "Logit", "Odds Ratio (- 1/Odds Ratio)", "Significance level 95%") %>% 
+  footnote(number = c("N = 122460 ties across the 6 networks (1 = presence/ 0 = absence)", 
+                      "Star indicates the null hypothesis value for the theta estimate (logit = 0; OR = 1) is outside of 95% confidence interval.",
+                      "Where logit values are <0 with odds ratios OR <1, the (-1/OR) value is denoted in brackets to facilitate interpretation of the odds ratio.")) %>% 
+  gsub("font-size: initial !important;", 
+       "font-size: 11pt !important; font-weight: bold !important;", 
+         .)
+
+tbl_m5
+tbl_m5 %>% save_kable("charts/tbl_m5.html")
+webshot("charts/tbl_m5.html", "charts/tbl_m5.pdf")
+webshot("charts/tbl_m5.html", "charts/tbl_m5.png")
+
+# save(tbl_m5, file = "6_objects/tbl_m5.RData")
+# load("6_objects/tbl_m5.RData")
+```
+
+
+
+### m5ag
+```{r}
+tbl_m5ag <- allm_sub5ag
+tbl_m5ag$model <- as.character(tbl_m5ag$model)
+
+rows_to_keep <- c(22, 23, 45, 46, 68, 69, 91, 92, 114, 115, 137, 138, 160, 161)
+tbl_m5ag <- tbl_m5ag[rows_to_keep, ]
+
+leer <- c(2,4,6,8,10,12,14)
+tbl_m5ag$model[leer] <- ""
+tbl_m5ag <- tbl_m5ag %>% select(-variable_group)
+
+cnamesag <-  c("Model", "Term", "Logit", "OR ( - 1/OR )", "")
+names(tbl_m5ag) <- cnamesag
+row.names(tbl_m5ag) <- NULL
+
+# save(tbl_m5ag, file = "6_objects/tbl_m5ag.RData")
+# load("6_objects/tbl_m5ag.RData")
+```
+
+
+```{r}
+tbl_m5ag1 <- tbl_m5ag %>%
+  kbl(format = "html",bookstab=T,escape=F,caption = "Extensions of Full Model (M5): aspects of country attribute armed conflict", align = "l") %>%
+  kable_classic(full_width = F, html_font = "Arial") %>%
+  kable_styling(bootstrap_options = c("striped","condensed","hover"), font_size = 11) %>%
+  row_spec(0, color = "black", bold =T, font_size = 11, background = "lightgray") %>%
+  # column_spec(1, color = "black", bold =T) %>%
+  column_spec(1, color = "black", bold =T) %>% # , width = "2.7cm"
+  # column_spec(2:6, width = "1.8cm") %>%
+  # add_footnote(.,
+  #          c("N = 157 across the 6 networks",
+  #            "Data source: SIPRI Arms Transfers Database (2023)",
+  #            "Components here refers to strong components"),notation = "number") %>% #
+  # col.names = c("Effect Group", "Term", "Logit", "Odds Ratio (- 1/Odds Ratio)", "Significance level 95%") %>% 
+  footnote(number = c("N = 122460 ties across the 6 networks (1 = presence/ 0 = absence)", 
+                      "Star indicates the null hypothesis value for the theta estimate (logit = 0; OR = 1) is outside of 95% confidence interval.",
+                      "Where logit values are <0 with odds ratios OR <1, the (-1/OR) value is denoted in brackets to facilitate interpretation of the odds ratio.")) %>% 
+  gsub("font-size: initial !important;", 
+       "font-size: 11pt !important; font-weight: bold !important;", 
+       .)
+
+tbl_m5ag1
+tbl_m5ag1 %>% save_kable("charts/tbl_m5ag1.html")
+webshot("charts/tbl_m5ag1.html", "charts/tbl_m5ag1.pdf")
+webshot("charts/tbl_m5ag1.html", "charts/tbl_m5ag1.png")
+
+# save(tbl_m5ag1, file = "6_objects/tbl_m5ag1.RData")
+# load("6_objects/tbl_m5ag1.RData")
+```
+
+
+
+```{r}
+## SAVE KBL TABLES
+  # align = "c",
+  # format = "html",
+  # table.attr = 'class="table table-bordered table-hover"') %>%
+  # add_header_above(c(" " = 1, "terms" = 2, "effect" = 3))%>%
+  # save_kable("charts/0_final/models/tbl_m5.png")
+  # as_image(file = "charts/0_final/models/tbl_m5.png") #,  width = 7.29, height = 4.5
+
+# kable(mtcars, "latex") %>%
+#   kable_styling(latex_options = "striped")
+```
+
+```{r}
+# dev.size("in")
+# tbl_m5
+# ggsave("charts/0_final/models/tbl_m5.png", width=7.29, height=4.5, dpi=300)
+```
+
+
+
+
+
+# 5) GOF
+
+- available gof methods:
+https://www.rdocumentation.org/packages/btergm/versions/1.9.13/topics/gof-methods
+
+- available gof statistics:
+https://www.rdocumentation.org/packages/btergm/versions/1.9.13/topics/gofstatistics
+
+- plot & print options:
+https://rdrr.io/cran/btergm/man/gof-plot.html
+
+
+One test of whether a local model fits the empirical network (i.e., our data) is therefore how well it reproduces the observed global network properties that are not in the model. We do this by choosing a network statistic that is not in the model, and comparing the value of this statistic observed in the original network to the distribution of values we get in simulated networks from our model, using the gof function.
+
+```{r}
+library(sna)
+library(tsna)
+library(btergm)
+# library(speedglm)
+```
+
+## 5a) out-of-sample
+
+
+### training & prediction data
+New model based on time spells t1-t5. Sample not used for training the model = t6.
+```{r}
+# training
+ally_snetb_oos <- ally_snetb[1:5]
+conf_snetb_oos <- conf_snetb[1:5]
+
+# prediction
+ally_snetb_oosx <- ally_snetb[5:6]
+conf_snetb_oosx <- conf_snetb[5:6]
+```
+
+
+### gof m0
+```{r}
+# library(btergm)
+set.seed(1902)
+m0_oos <- btergm(iat_snetb[1:5] ~ edges 
+                 
+                 + gwesp(1.5, fixed=T)
+                 
+                 ## SETTINGS
+                 ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+summary(m0_oos)
+# screenreg(m0_oos)
+# exp(coef(m0_oos))
+# save(m0_oos, file = "6_objects/m0_oos.RData")
+load("6_objects/m0_oos.RData")
+```
+
+Evaluate performance of TERGMs m0 with network at t6 (prediction data)
+```{r}
+set.seed(1902)
+gof_m0_oos <- btergm::gof(m0_oos, nsim = 30, parallel = "snow", ncpus = 2, 
+                          target = iat_snetb[[6]],
+                          formula = iat_snetb[5:6] ~ edges  # density
+
+                          + gwesp(1.5, fixed=T) 
+                          
+                          ### m0 based on t1-t5
+                          ,coef = coef(m0_oos)
+                          
+                          ,statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# gof_m0_oos
+# save(gof_m0_oos, file = "6_objects/gof_m0_oos.RData")
+load("6_objects/gof_m0_oos.RData")
+```
+
+
+```{r}
+pdf("charts/gof_m0_oos.pdf", width = 8, height = 6)
+
+plot(gof_m0_oos$`Edge-wise shared partners`)
+plot(gof_m0_oos$`Dyad-wise shared partners`)
+# plot(gof_m0_oos$`Non-edge-wise shared partners`)
+plot(gof_m0_oos$`Geodesic distances`)
+plot(gof_m0_oos$Indegree)
+plot(gof_m0_oos$Outdegree)
+plot(gof_m0_oos$`Triad census`)
+plot(gof_m0_oos$`Incoming k-star`)
+plot(gof_m0_oos$`Outgoing k-star`)
+plot(gof_m0_oos$`Modularity (fast & greedy)`)
+plot(gof_m0_oos$`Modularity (walktrap)`)
+# plot(gof_m0_oos$`Tie prediction`)
+plot(gof_m0_oos$`Tie prediction`,roc.rgraph = TRUE, pr.rgraph = TRUE)
+
+dev.off()
+```
+
+
+
+
+### gof m1
+```{r}
+# library(btergm)
+set.seed(1902)
+m1_oos <- btergm(iat_snetb[1:5] ~ edges 
+                 
+                 ## STRUCTURAL TERMS
+                 + gwesp(1.5, fixed=T) 
+                 + gwodegree(1, fixed=T) 
+                 + gwidegree(1, fixed=T)
+                 + mutual 
+                 
+                 ## SETTINGS
+                 ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+summary(m1_oos)
+# screenreg(m1_oos)
+# exp(coef(m1_oos))
+# save(m1_oos, file = "6_objects/m1_oos.RData")
+load("6_objects/m1_oos.RData")
+```
+
+Evaluate performance of TERGMs m1 with network at t6 (prediction data)
+```{r}
+set.seed(1902)
+gof_m1_oos <- btergm::gof(m1_oos, nsim = 30, parallel = "snow", ncpus = 2, 
+                          target = iat_snetb[[6]],
+                          formula = iat_snetb[5:6] ~ edges  # density
+                          
+                          ## STRUCTURAL TERMS
+                          + gwesp(1.5, fixed=T) 
+                          + gwodegree(1, fixed=T)
+                          + gwidegree(1, fixed=T) 
+                          + mutual
+                          
+                          
+                          
+                          ### m1 based on t1-t5
+                          ,coef = coef(m1_oos)
+                          
+                          ,statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# gof_m1_oos
+# save(gof_m1_oos, file = "6_objects/gof_m1_oos.RData")
+load("6_objects/gof_m1_oos.RData")
+```
+
+
+```{r}
+pdf("charts/gof_m1_oos.pdf", width = 8, height = 6)
+
+plot(gof_m1_oos$`Edge-wise shared partners`)
+plot(gof_m1_oos$`Dyad-wise shared partners`)
+# plot(gof_m1_oos$`Non-edge-wise shared partners`)
+plot(gof_m1_oos$`Geodesic distances`)
+plot(gof_m1_oos$Indegree)
+plot(gof_m1_oos$Outdegree)
+plot(gof_m1_oos$`Triad census`)
+plot(gof_m1_oos$`Incoming k-star`)
+plot(gof_m1_oos$`Outgoing k-star`)
+plot(gof_m1_oos$`Modularity (fast & greedy)`)
+plot(gof_m1_oos$`Modularity (walktrap)`)
+# plot(gof_m1_oos$`Tie prediction`)
+plot(gof_m1_oos$`Tie prediction`,roc.rgraph = TRUE, pr.rgraph = TRUE)
+
+dev.off()
+```
+
+
+
+
+
+### gof m2
+```{r}
+# library(btergm)
+set.seed(1902)
+m2_oos <- btergm(iat_snetb[1:5] ~ edges 
+                 
+                 ## STRUCTURAL TERMS
+                 + gwesp(1.5, fixed=T) 
+                 + gwodegree(1, fixed=T) 
+                 + gwidegree(1, fixed=T)
+                 + mutual
+                 
+                 ##  TEMPORAL DEPENDENCIES (lag=1)  
+                 + memory(type = "innovation", lag=1) 
+                 + timecov(transform = function(t) t) 
+                 
+                 ## SETTINGS
+                 ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+
+```{r}
+summary(m2_oos)
+# screenreg(m2_oos)
+# exp(coef(m2_oos))
+# save(m2_oos, file = "6_objects/m2_oos.RData")
+load("6_objects/m2_oos.RData")
+```
+
+Evaluate performance of TERGMs m2 with network at t6 (prediction data)
+```{r}
+set.seed(1902)
+gof_m2_oos <- btergm::gof(m2_oos, nsim = 30, parallel = "snow", ncpus = 2, 
+                          target = iat_snetb[[6]],
+                          formula = iat_snetb[5:6] ~ edges  # density
+                          
+                          ## STRUCTURAL TERMS
+                          + gwesp(1.5, fixed=T) 
+                          + gwodegree(1, fixed=T)
+                          + gwidegree(1, fixed=T) 
+                          + mutual
+                          
+                          ##  TEMPORAL DEPENDENCIES (lag=1)  
+                          + memory(type = "innovation", lag=1)
+                          + timecov(transform = function(t) t)
+                          
+                          
+                          ### m2 based on t1-t5
+                          ,coef = coef(m2_oos)
+                          
+                          ,statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# gof_m2_oos
+# save(gof_m2_oos, file = "6_objects/gof_m2_oos.RData")
+load("6_objects/gof_m2_oos.RData")
+```
+
+
+```{r}
+pdf("charts/gof_m2_oos.pdf", width = 8, height = 6)
+
+plot(gof_m2_oos$`Edge-wise shared partners`)
+plot(gof_m2_oos$`Dyad-wise shared partners`)
+# plot(gof_m2_oos$`Non-edge-wise shared partners`)
+plot(gof_m2_oos$`Geodesic distances`)
+plot(gof_m2_oos$Indegree)
+plot(gof_m2_oos$Outdegree)
+plot(gof_m2_oos$`Triad census`)
+plot(gof_m2_oos$`Incoming k-star`)
+plot(gof_m2_oos$`Outgoing k-star`)
+plot(gof_m2_oos$`Modularity (fast & greedy)`)
+plot(gof_m2_oos$`Modularity (walktrap)`)
+# plot(gof_m2_oos$`Tie prediction`)
+plot(gof_m2_oos$`Tie prediction`,roc.rgraph = TRUE, pr.rgraph = TRUE)
+
+dev.off()
+```
+
+
+
+
+
+### gof m3
+```{r}
+# library(btergm)
+set.seed(1902)
+m3_oos <- btergm(iat_snetb[1:5] ~ edges 
+                 
+                 ## STRUCTURAL TERMS
+                 + gwesp(1.5, fixed=T) 
+                 + gwodegree(1, fixed=T) 
+                 + gwidegree(1, fixed=T)
+                 + mutual
+                 
+                 ##  TEMPORAL DEPENDENCIES (lag=1)  
+                 + memory(type = "innovation", lag=1) 
+                 + timecov(transform = function(t) t) 
+                 
+                 ## EDGE LEVEL TERMS
+                 + edgecov(ally_snetb_oos) # ally network t1-t5
+                 + edgecov(conf_snetb_oos) # conf network t1-t5
+                 + edgecov(capdist_log2_adj)
+                 + nodematch("cat_gdp", diff=T) 
+                 + absdiff("democracy") 
+                 
+                 ## SETTINGS
+                 ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+
+```{r}
+summary(m3_oos)
+# screenreg(m3_oos)
+# exp(coef(m3_oos))
+# save(m3_oos, file = "6_objects/m3_oos.RData")
+load("6_objects/m3_oos.RData")
+```
+
+Evaluate performance of TERGMs m3 with network at t6 (prediction data)
+```{r}
+set.seed(1902)
+gof_m3_oos <- btergm::gof(m3_oos, nsim = 30, parallel = "snow", ncpus = 2, 
+                          target = iat_snetb[[6]],
+                          formula = iat_snetb[5:6] ~ edges  # density
+                          
+                          ## STRUCTURAL TERMS
+                          + gwesp(1.5, fixed=T) 
+                          + gwodegree(1, fixed=T)
+                          + gwidegree(1, fixed=T) 
+                          + mutual
+                          
+                          ##  TEMPORAL DEPENDENCIES (lag=1)  
+                          + memory(type = "innovation", lag=1)
+                          + timecov(transform = function(t) t)
+                          
+                          ## EDGE LEVEL TERMS
+                          + edgecov(ally_snetb_oosx) # ally network t5-t6
+                          + edgecov(conf_snetb_oosx) # conf network t5-t6
+                          + edgecov(capdist_log2_adj)
+                          + nodematch("cat_gdp", diff=T)
+                          + absdiff("democracy") 
+                          
+                          
+                          ### m3 based on t1-t5
+                          ,coef = coef(m3_oos)
+                          
+                          ,statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# gof_m3_oos
+# save(gof_m3_oos, file = "6_objects/gof_m3_oos.RData")
+load("6_objects/gof_m3_oos.RData")
+```
+
+
+```{r}
+pdf("charts/gof_m3_oos.pdf", width = 8, height = 6)
+
+plot(gof_m3_oos$`Edge-wise shared partners`)
+plot(gof_m3_oos$`Dyad-wise shared partners`)
+# plot(gof_m3_oos$`Non-edge-wise shared partners`)
+plot(gof_m3_oos$`Geodesic distances`)
+plot(gof_m3_oos$Indegree)
+plot(gof_m3_oos$Outdegree)
+plot(gof_m3_oos$`Triad census`)
+plot(gof_m3_oos$`Incoming k-star`)
+plot(gof_m3_oos$`Outgoing k-star`)
+plot(gof_m3_oos$`Modularity (fast & greedy)`)
+plot(gof_m3_oos$`Modularity (walktrap)`)
+# plot(gof_m3_oos$`Tie prediction`)
+plot(gof_m3_oos$`Tie prediction`,roc.rgraph = TRUE, pr.rgraph = TRUE)
+
+dev.off()
+```
+
+
+
+
+
+
+### gof m4
+```{r}
+# library(btergm)
+set.seed(1902)
+m4_oos <- btergm(iat_snetb[1:5] ~ edges 
+                 
+                 ## STRUCTURAL TERMS
+                 + gwesp(1.5, fixed=T) 
+                 + gwodegree(1, fixed=T) 
+                 + gwidegree(1, fixed=T)
+                 + mutual
+                 
+                 ##  TEMPORAL DEPENDENCIES (lag=1)  
+                 + memory(type = "innovation", lag=1) 
+                 + timecov(transform = function(t) t) 
+                 
+                 ## EDGE LEVEL TERMS
+                 + edgecov(ally_snetb_oos) # ally network t1-t5
+                 + edgecov(conf_snetb_oos) # conf network t1-t5
+                 + edgecov(capdist_log2_adj)
+                 + nodematch("cat_gdp", diff=T) 
+                 + absdiff("democracy") 
+                 
+                 
+                 ## NODE TERMS
+                 ### material factors
+                 + nodeocov("log2_gdp")
+                 + nodeicov("log2_gdp")
+                 + nodeocov("log2_milex")
+                 + nodeicov("log2_milex")
+                 + nodeicov("log2_population") 
+                 
+                 ## SETTINGS
+                 ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+
+```{r}
+summary(m4_oos)
+# screenreg(m4_oos)
+# exp(coef(m4_oos))
+# save(m4_oos, file = "6_objects/m4_oos.RData")
+load("m4_oos.RData")
+```
+
+
+
+Evaluate performance of TERGMs m4 with network at t6 (prediction data)
+```{r}
+set.seed(1902)
+gof_m4_oos <- btergm::gof(m4_oos, nsim = 30, parallel = "snow", ncpus = 2, 
+                          target = iat_snetb[[6]],
+                          formula = iat_snetb[5:6] ~ edges  # density
+                          
+                          ## STRUCTURAL TERMS
+                          + gwesp(1.5, fixed=T) 
+                          + gwodegree(1, fixed=T)
+                          + gwidegree(1, fixed=T) 
+                          + mutual
+                          
+                          ##  TEMPORAL DEPENDENCIES (lag=1)  
+                          + memory(type = "innovation", lag=1)
+                          + timecov(transform = function(t) t)
+                          
+                          ## EDGE LEVEL TERMS
+                          + edgecov(ally_snetb_oosx) # ally network t5-t6
+                          + edgecov(conf_snetb_oosx) # conf network t5-t6
+                          + edgecov(capdist_log2_adj)
+                          + nodematch("cat_gdp", diff=T)
+                          + absdiff("democracy") 
+                          
+                          ## NODE TERMS
+                          ### material factors
+                          + nodeocov("log2_gdp")
+                          + nodeicov("log2_gdp")
+                          + nodeocov("log2_milex")
+                          + nodeicov("log2_milex")
+                          + nodeicov("log2_population")
+                          
+                          ### m4 based on t1-t5
+                          ,coef = coef(m4_oos)
+                          
+                          ,statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# gof_m4_oos
+# save(gof_m4_oos, file = "6_objects/gof_m4_oos.RData")
+load("6_objects/gof_m4_oos.RData")
+```
+
+
+```{r}
+pdf("charts/gof_m4_oos.pdf", width = 8, height = 6)
+
+plot(gof_m4_oos$`Edge-wise shared partners`)
+plot(gof_m4_oos$`Dyad-wise shared partners`)
+# plot(gof_m4_oos$`Non-edge-wise shared partners`)
+plot(gof_m4_oos$`Geodesic distances`)
+plot(gof_m4_oos$Indegree)
+plot(gof_m4_oos$Outdegree)
+plot(gof_m4_oos$`Triad census`)
+plot(gof_m4_oos$`Incoming k-star`)
+plot(gof_m4_oos$`Outgoing k-star`)
+plot(gof_m4_oos$`Modularity (fast & greedy)`)
+plot(gof_m4_oos$`Modularity (walktrap)`)
+# plot(gof_m4_oos$`Tie prediction`)
+plot(gof_m4_oos$`Tie prediction`,roc.rgraph = TRUE, pr.rgraph = TRUE)
+
+dev.off()
+```
+
+
+
+
+
+### gof m5
+```{r}
+# library(btergm)
+set.seed(1902)
+m5_oos <- btergm(iat_snetb[1:5] ~ edges 
+             
+             ## STRUCTURAL TERMS
+             + gwesp(1.5, fixed=T) 
+             + gwodegree(1, fixed=T) 
+             + gwidegree(1, fixed=T)
+             + mutual
+             
+             ##  TEMPORAL DEPENDENCIES (lag=1)  
+             + memory(type = "innovation", lag=1) 
+             + timecov(transform = function(t) t) 
+             
+             ## EDGE LEVEL TERMS
+             + edgecov(ally_snetb_oos) # ally network t1-t5
+             + edgecov(conf_snetb_oos) # conf network t1-t5
+             + edgecov(capdist_log2_adj)
+             + nodematch("cat_gdp", diff=T) 
+             + absdiff("democracy") 
+             
+             ## NODE TERMS
+             ### material factors
+             + nodeocov("log2_gdp")
+             + nodeicov("log2_gdp")
+             + nodeocov("log2_milex")
+             + nodeicov("log2_milex")
+             + nodeicov("log2_population") 
+             
+             ### stability/security
+             + nodeifactor("d_sovscore") 
+             + nodeifactor("d_coups")    
+             + nodeofactor("d_inter")    
+             + nodeifactor("d_inter")
+             + nodeofactor("d_intra")    
+             + nodeifactor("d_intra")
+             
+             ## SETTINGS
+             ,R = 50, parallel = "snow", ncpus = 2)
+
+```
+
+```{r}
+summary(m5_oos)
+# screenreg(m5_oos)
+# exp(coef(m5_oos))
+# save(m5_oos, file = "6_objects/m5_oos.RData")
+load("6_objects/m5_oos.RData")
+```
+
+
+Evaluate performance of TERGMs m5 with network at t6 (prediction data)
+```{r}
+set.seed(1902)
+gof_m5_oos <- btergm::gof(m5_oos, nsim = 30, parallel = "snow", ncpus = 2, 
+                          target = iat_snetb[[6]],
+                          formula = iat_snetb[5:6] ~ edges  # density
+             
+                           ## STRUCTURAL TERMS
+                           + gwesp(1.5, fixed=T) 
+                           + gwodegree(1, fixed=T)
+                           + gwidegree(1, fixed=T) 
+                           + mutual
+                           
+                           ##  TEMPORAL DEPENDENCIES (lag=1)  
+                           + memory(type = "innovation", lag=1)
+                           + timecov(transform = function(t) t)
+                           
+                           ## EDGE LEVEL TERMS
+                           + edgecov(ally_snetb_oosx) # ally network t5-t6
+                           + edgecov(conf_snetb_oosx) # conf network t5-t6
+                           + edgecov(capdist_log2_adj)
+                           + nodematch("cat_gdp", diff=T)
+                           + absdiff("democracy") 
+                           
+                           ## NODE TERMS
+                           ### material factors
+                           + nodeocov("log2_gdp")
+                           + nodeicov("log2_gdp")
+                           + nodeocov("log2_milex")
+                           + nodeicov("log2_milex")
+                           + nodeicov("log2_population") 
+                           
+                           ### stability/security
+                           + nodeifactor("d_sovscore") 
+                           + nodeifactor("d_coups")     
+                           + nodeofactor("d_inter")    
+                           + nodeifactor("d_inter")
+                           + nodeofactor("d_intra")    
+                           + nodeifactor("d_intra")
+                          
+                          ### m5 based on t1-t5
+                          ,coef = coef(m5_oos)
+
+                          ,statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# gof_m5_oos
+
+# save(gof_m5_oos, file = "6_objects/gof_m5_oos.RData")
+load("6_objects/gof_m5_oos.RData")
+```
+
+
+```{r}
+pdf("charts/gof_m5_oos.pdf", width = 8, height = 6)
+
+plot(gof_m5_oos$`Edge-wise shared partners`)
+plot(gof_m5_oos$`Dyad-wise shared partners`)
+# plot(gof_m5_oos$`Non-edge-wise shared partners`)
+plot(gof_m5_oos$`Geodesic distances`)
+plot(gof_m5_oos$Indegree)
+plot(gof_m5_oos$Outdegree)
+plot(gof_m5_oos$`Triad census`)
+plot(gof_m5_oos$`Incoming k-star`)
+plot(gof_m5_oos$`Outgoing k-star`)
+plot(gof_m5_oos$`Modularity (fast & greedy)`)
+plot(gof_m5_oos$`Modularity (walktrap)`)
+# plot(gof_m5_oos$`Tie prediction`)
+plot(gof_m5_oos$`Tie prediction`,roc.rgraph = TRUE, pr.rgraph = TRUE)
+
+dev.off()
+```
+
+
+
+
+### PR & ROC stats
+
+ER  0.04  0.50
+M0	0.24	0.65
+M1	0.33	0.86
+M2	0.56	0.86
+M3	0.55	0.86
+M4	0.58	0.87
+M5	0.58	0.87
+
+
+ER PR exact:
+0.039
+0.039
+0.037
+0.040
+0.038
+0.037
+
+ER ROC exact:
+0.50
+0.50
+0.49
+0.50
+0.49
+0.49
+
+
+
+```{r}
+# tie prediction is stored in 11th object since I asked for 10 stats
+gof_m0_oos[[11]]$auc.pr # PR AUC of model 0 out of sample
+gof_m0_oos[[11]]$auc.roc # ROC AUC of model 0 out of sample
+gof_m0_oos[[11]]$auc.pr.rgraph # PR AUC of random network i.e. Erdos-Renyi model
+gof_m0_oos[[11]]$auc.roc.rgraph # ROC AUC of random network i.e. Erdos-Renyi model
+```
+
+```{r}
+# tie prediction is stored in 11th object since I asked for 10 stats
+gof_m1_oos[[11]]$auc.pr # PR AUC of model 1 out of sample
+gof_m1_oos[[11]]$auc.roc # ROC AUC of model 1 out of sample
+gof_m1_oos[[11]]$auc.pr.rgraph # PR AUC of random network i.e. Erdos-Renyi model
+gof_m1_oos[[11]]$auc.roc.rgraph # ROC AUC of random network i.e. Erdos-Renyi model
+```
+
+```{r}
+# tie prediction is stored in 11th object since I asked for 10 stats
+gof_m2_oos[[11]]$auc.pr # PR AUC of model 2 out of sample
+gof_m2_oos[[11]]$auc.roc # ROC AUC of model 2 out of sample
+gof_m2_oos[[11]]$auc.pr.rgraph # PR AUC of random network i.e. Erdos-Renyi model
+gof_m2_oos[[11]]$auc.roc.rgraph # ROC AUC of random network i.e. Erdos-Renyi model
+```
+
+```{r}
+# tie prediction is stored in 11th object since I asked for 10 stats
+gof_m3_oos[[11]]$auc.pr # PR AUC of model 3 out of sample
+gof_m3_oos[[11]]$auc.roc # ROC AUC of model 3 out of sample
+gof_m3_oos[[11]]$auc.pr.rgraph # PR AUC of random network i.e. Erdos-Renyi model
+gof_m3_oos[[11]]$auc.roc.rgraph # ROC AUC of random network i.e. Erdos-Renyi model
+```
+
+```{r}
+# tie prediction is stored in 11th object since I asked for 10 stats
+gof_m4_oos[[11]]$auc.pr # PR AUC of model 4 out of sample
+gof_m4_oos[[11]]$auc.roc # ROC AUC of model 4 out of sample
+gof_m4_oos[[11]]$auc.pr.rgraph # PR AUC of random network i.e. Erdos-Renyi model
+gof_m4_oos[[11]]$auc.roc.rgraph # ROC AUC of random network i.e. Erdos-Renyi model
+```
+
+
+```{r}
+# tie prediction is stored in 11th object since I asked for 10 stats
+gof_m5_oos[[11]]$auc.pr # PR AUC of model 5 out of sample
+gof_m5_oos[[11]]$auc.roc # ROC AUC of model 5 out of sample
+gof_m5_oos[[11]]$auc.pr.rgraph # PR AUC of random network i.e. Erdos-Renyi model
+gof_m5_oos[[11]]$auc.roc.rgraph # ROC AUC of random network i.e. Erdos-Renyi model
+```
+
+
+
+
+## 5b) in-sample
+
+### gof m0
+```{r}
+set.seed(1902)
+gof_m0 <- btergm::gof(m0, nsim = 30, parallel = "snow", ncpus = 2,
+              statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                             fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m0, file = "6_objects/gof_m0.RData")
+# load("gof_m0.RData")
+```
+
+```{r}
+plot(gof_m0, mfrow=F)
+plot(gof_m0$`Edge-wise shared partners`)
+plot(gof_m0$`Dyad-wise shared partners`)
+plot(gof_m0$`Geodesic distances`)
+plot(gof_m0$Indegree)
+plot(gof_m0$Outdegree)
+plot(gof_m0$`Triad census`)
+# plot(gof_m0$`Incoming k-star`)
+# plot(gof_m0$`Outgoing k-star`)
+plot(gof_m0$`Modularity (fast & greedy)`)
+plot(gof_m0$`Modularity (walktrap)`)
+plot(gof_m0$`Tie prediction`)
+
+
+```
+
+```{r}
+# pdf("gof_m0.pdf", width = 8, height = 6) # open pdf device, w & h in inches
+# plot(gof_m0,
+#      # mfrow=F,
+#      main = ""
+#      # border = "grey",
+#      # sim.col = "red",
+#      # obs.col = "blue"
+#      ,)
+# dev.off()
+```
+
+
+
+
+
+
+
+### gof m1
+
+```{r}
+set.seed(1902)
+gof_m1 <- btergm::gof(m1, nsim = 30, parallel = "snow", ncpus = 2,
+              statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                             fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m1, file = "6_objects/gof_m1.RData")
+# load("gof_m1.RData")
+```
+
+```{r}
+plot(gof_m1, mfrow=F)
+plot(gof_m1$`Edge-wise shared partners`)
+plot(gof_m1$`Dyad-wise shared partners`)
+# plot(gof_m1$`Non-edge-wise shared partners`)
+plot(gof_m1$`Geodesic distances`)
+plot(gof_m1$Indegree)
+plot(gof_m1$Outdegree)
+plot(gof_m1$`Triad census`)
+# plot(gof_m1$`Incoming k-star`)
+# plot(gof_m1$`Outgoing k-star`)
+# plot(gof_m1$`Modularity (fast & greedy)`)
+# plot(gof_m1$`Modularity (walktrap)`)
+# plot(gof_m1$`Tie prediction`)
+```
+
+```{r}
+# pdf("gof_m1.pdf", width = 8, height = 6) # open pdf device, w & h in inches
+# plot(gof_m1,
+#      # mfrow=F,
+#      main = ""
+#      # border = "grey",
+#      # sim.col = "red",
+#      # obs.col = "blue"
+#      ,)
+# dev.off()
+```
+
+
+
+
+### gof m2
+
+```{r}
+set.seed(1902)
+gof_m2 <- btergm::gof(m2, nsim = 30, parallel = "snow", ncpus = 2,
+              statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar, fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m2, file = "6_objects/gof_m2.RData")
+# load("gof_m2.RData")
+```
+
+
+```{r}
+plot(gof_m2, mfrow=F)
+plot(gof_m2$`Edge-wise shared partners`)
+plot(gof_m2$`Dyad-wise shared partners`)
+# plot(gof_m2$`Non-edge-wise shared partners`)
+plot(gof_m2$`Geodesic distances`)
+plot(gof_m2$Indegree)
+plot(gof_m2$Outdegree)
+plot(gof_m2$`Triad census`)
+# plot(gof_m2$`Incoming k-star`)
+# plot(gof_m2$`Outgoing k-star`)
+# plot(gof_m2$`Modularity (fast & greedy)`)
+# plot(gof_m2$`Modularity (walktrap)`)
+# plot(gof_m2$`Tie prediction`)
+```
+
+
+
+```{r}
+# pdf("gof_m2.pdf", width = 8, height = 6)
+# plot(gof_m2)
+# dev.off()
+```
+
+
+
+
+
+
+### gof m3
+
+```{r}
+set.seed(1902)
+gof_m3 <- btergm::gof(m3, nsim = 30, parallel = "snow", ncpus = 2,
+              statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                             fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m3, file = "6_objects/gof_m3.RData")
+# load("gof_m3.RData")
+```
+
+
+```{r}
+plot(gof_m3, mfrow=F)
+plot(gof_m3$`Edge-wise shared partners`)
+plot(gof_m3$`Dyad-wise shared partners`)
+# plot(gof_m3$`Non-edge-wise shared partners`)
+plot(gof_m3$`Geodesic distances`)
+plot(gof_m3$Indegree)
+plot(gof_m3$Outdegree)
+plot(gof_m3$`Triad census`)
+# plot(gof_m3$`Incoming k-star`)
+# plot(gof_m3$`Outgoing k-star`)
+# plot(gof_m3$`Modularity (fast & greedy)`)
+# plot(gof_m3$`Modularity (walktrap)`)
+# plot(gof_m3$`Tie prediction`)
+```
+
+```{r}
+# pdf("gof_m3.pdf", width = 8, height = 6)
+# plot(gof_m3)
+# dev.off()
+```
+
+
+
+### gof m4
+
+```{r}
+set.seed(1902)
+gof_m4 <- btergm::gof(m4, nsim = 30, parallel = "snow", ncpus = 2,
+                      statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                     fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m4, file = "6_objects/gof_m4.RData")
+# load("gof_m4.RData")
+```
+
+```{r}
+plot(gof_m4, mfrow=F)
+plot(gof_m4$`Edge-wise shared partners`)
+plot(gof_m4$`Dyad-wise shared partners`)
+plot(gof_m4$`Non-edge-wise shared partners`)
+plot(gof_m4$`Geodesic distances`)
+plot(gof_m4$Indegree)
+plot(gof_m4$Outdegree)
+plot(gof_m4$`Triad census`)
+# plot(gof_m4$`Incoming k-star`)
+# plot(gof_m4$`Outgoing k-star`)
+# plot(gof_m4$`Modularity (fast & greedy)`)
+# plot(gof_m4$`Modularity (walktrap)`)
+# plot(gof_m4$`Tie prediction`)
+```
+
+
+```{r}
+# pdf("gof_m4.pdf", width = 8, height = 6)
+# plot(gof_m4)
+# dev.off()
+```
+
+
+### gof m5
+
+```{r}
+set.seed(1902)
+gof_m5 <- btergm::gof(m5, nsim = 30, parallel = "snow", ncpus = 2,
+                       statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                      fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m5, file = "6_objects/gof_m5.RData")
+load("6_objects/gof_m5.RData")
+```
+
+
+```{r}
+# pdf("gof_m5.pdf", width = 8, height = 6)
+# plot(gof_m5)
+# dev.off()
+```
+
+```{r}
+# plot(gof_m5, mfrow=F)
+pdf("charts/gof_m5_fin2.pdf", width = 8, height = 6)
+
+plot(gof_m5$`Geodesic distances`)
+plot(gof_m5$`Edge-wise shared partners`)
+plot(gof_m5$`Dyad-wise shared partners`)
+# plot(gof_m5$`Non-edge-wise shared partners`)
+plot(gof_m5$Indegree)
+plot(gof_m5$Outdegree)
+plot(gof_m5$`Triad census`)
+plot(gof_m5$`Incoming k-star`)
+plot(gof_m5$`Outgoing k-star`)
+plot(gof_m5$`Modularity (fast & greedy)`)
+plot(gof_m5$`Modularity (walktrap)`)
+plot(gof_m5$`Tie prediction`,roc.rgraph = TRUE, pr.rgraph = TRUE)
+
+dev.off()
+```
+
+
+
+
+### gof m5a
+
+```{r}
+set.seed(1902)
+gof_m5a <- btergm::gof(m5a, nsim = 30, parallel = "snow", ncpus = 2,
+                       statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                      fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m5a, file = "6_objects/gof_m5a.RData")
+# load("gof_m5a.RData")
+```
+
+```{r}
+plot(gof_m5a, mfrow=F)
+plot(gof_m5a$`Edge-wise shared partners`)
+plot(gof_m5a$`Dyad-wise shared partners`)
+plot(gof_m5a$`Non-edge-wise shared partners`)
+plot(gof_m5a$`Geodesic distances`)
+plot(gof_m5a$Indegree)
+plot(gof_m5a$Outdegree)
+plot(gof_m5a$`Triad census`)
+# plot(gof_m5a$`Incoming k-star`)
+# plot(gof_m5a$`Outgoing k-star`)
+# plot(gof_m5a$`Modularity (fast & greedy)`)
+# plot(gof_m5a$`Modularity (walktrap)`)
+# plot(gof_m5a$`Tie prediction`)
+```
+
+
+```{r}
+# pdf("gof_m5a.pdf", width = 8, height = 6)
+# plot(gof_m5a)
+# dev.off()
+```
+
+
+
+### gof m5b
+
+
+
+
+```{r}
+set.seed(1902)
+gof_m5b <- btergm::gof(m5b, nsim = 30, parallel = "snow", ncpus = 2,
+                       statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                      fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m5b, file = "6_objects/gof_m5b.RData")
+# load("gof_m5b.RData")
+```
+
+```{r}
+plot(gof_m5b, mfrow=F)
+plot(gof_m5b$`Edge-wise shared partners`)
+plot(gof_m5b$`Dyad-wise shared partners`)
+plot(gof_m5b$`Non-edge-wise shared partners`)
+plot(gof_m5b$`Geodesic distances`)
+plot(gof_m5b$Indegree)
+plot(gof_m5b$Outdegree)
+plot(gof_m5b$`Triad census`)
+# plot(gof_m5b$`Incoming k-star`)
+# plot(gof_m5b$`Outgoing k-star`)
+# plot(gof_m5b$`Modularity (fast & greedy)`)
+# plot(gof_m5b$`Modularity (walktrap)`)
+# plot(gof_m5b$`Tie prediction`)
+```
+
+
+```{r}
+# pdf("gof_m5b.pdf", width = 8, height = 6)
+# plot(gof_m5b)
+# dev.off()
+```
+
+
+
+
+### gof m5c
+
+```{r}
+set.seed(1902)
+gof_m5c <- btergm::gof(m5c, nsim = 30, parallel = "snow", ncpus = 2,
+                       statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                      fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m5c, file = "6_objects/gof_m5c.RData")
+# load("gof_m5c.RData")
+```
+
+```{r}
+plot(gof_m5c, mfrow=F)
+plot(gof_m5c$`Edge-wise shared partners`)
+plot(gof_m5c$`Dyad-wise shared partners`)
+plot(gof_m5c$`Non-edge-wise shared partners`)
+plot(gof_m5c$`Geodesic distances`)
+plot(gof_m5c$Indegree)
+plot(gof_m5c$Outdegree)
+plot(gof_m5c$`Triad census`)
+# plot(gof_m5c$`Incoming k-star`)
+# plot(gof_m5c$`Outgoing k-star`)
+# plot(gof_m5c$`Modularity (fast & greedy)`)
+# plot(gof_m5c$`Modularity (walktrap)`)
+# plot(gof_m5c$`Tie prediction`)
+```
+
+
+```{r}
+# pdf("gof_m5c.pdf", width = 8, height = 6)
+# plot(gof_m5c)
+# dev.off()
+```
+
+
+
+
+### gof m5d
+
+```{r}
+set.seed(1902)
+gof_m5d <- btergm::gof(m5d, nsim = 30, parallel = "snow", ncpus = 2,
+                       statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                      fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m5d, file = "6_objects/gof_m5d.RData")
+# load("gof_m5d.RData")
+```
+
+```{r}
+plot(gof_m5d, mfrow=F)
+plot(gof_m5d$`Edge-wise shared partners`)
+plot(gof_m5d$`Dyad-wise shared partners`)
+plot(gof_m5d$`Non-edge-wise shared partners`)
+plot(gof_m5d$`Geodesic distances`)
+plot(gof_m5d$Indegree)
+plot(gof_m5d$Outdegree)
+plot(gof_m5d$`Triad census`)
+# plot(gof_m5d$`Incoming k-star`)
+# plot(gof_m5d$`Outgoing k-star`)
+# plot(gof_m5d$`Modularity (fast & greedy)`)
+# plot(gof_m5d$`Modularity (walktrap)`)
+# plot(gof_m5d$`Tie prediction`)
+```
+
+
+```{r}
+# pdf("gof_m5d.pdf", width = 8, height = 6)
+# plot(gof_m5d)
+# dev.off()
+```
+
+
+### gof m5e
+
+```{r}
+set.seed(1902)
+gof_m5e <- btergm::gof(m5e, nsim = 30, parallel = "snow", ncpus = 2,
+                       statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                      fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m5e, file = "6_objects/gof_m5e.RData")
+# load("gof_m5e.RData")
+```
+
+```{r}
+plot(gof_m5e, mfrow=F)
+plot(gof_m5e$`Edge-wise shared partners`)
+plot(gof_m5e$`Dyad-wise shared partners`)
+plot(gof_m5e$`Non-edge-wise shared partners`)
+plot(gof_m5e$`Geodesic distances`)
+plot(gof_m5e$Indegree)
+plot(gof_m5e$Outdegree)
+plot(gof_m5e$`Triad census`)
+# plot(gof_m5e$`Incoming k-star`)
+# plot(gof_m5e$`Outgoing k-star`)
+# plot(gof_m5e$`Modularity (fast & greedy)`)
+# plot(gof_m5e$`Modularity (walktrap)`)
+# plot(gof_m5e$`Tie prediction`)
+```
+
+
+```{r}
+# pdf("gof_m5e.pdf", width = 8, height = 6)
+# plot(gof_m5e)
+# dev.off()
+```
+
+
+
+### gof m5f
+
+```{r}
+set.seed(1902)
+gof_m5f <- btergm::gof(m5f, nsim = 30, parallel = "snow", ncpus = 2,
+                       statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                      fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m5f, file = "6_objects/gof_m5f.RData")
+# load("gof_m5f.RData")
+```
+
+```{r}
+plot(gof_m5f, mfrow=F)
+plot(gof_m5f$`Edge-wise shared partners`)
+plot(gof_m5f$`Dyad-wise shared partners`)
+plot(gof_m5f$`Non-edge-wise shared partners`)
+plot(gof_m5f$`Geodesic distances`)
+plot(gof_m5f$Indegree)
+plot(gof_m5f$Outdegree)
+plot(gof_m5f$`Triad census`)
+# plot(gof_m5f$`Incoming k-star`)
+# plot(gof_m5f$`Outgoing k-star`)
+# plot(gof_m5f$`Modularity (fast & greedy)`)
+# plot(gof_m5f$`Modularity (walktrap)`)
+# plot(gof_m5f$`Tie prediction`)
+```
+
+
+```{r}
+# pdf("gof_m5f.pdf", width = 8, height = 6)
+# plot(gof_m5f)
+# dev.off()
+```
+
+
+
+
+### gof m5g
+
+
+```{r}
+set.seed(1902)
+gof_m5g <- btergm::gof(m5g, nsim = 30, parallel = "snow", ncpus = 2,
+                       statistics = c(geodesic, ideg, odeg, esp, dsp, triad.directed, istar, ostar,
+                                      fastgreedy.modularity, walktrap.modularity, rocpr))
+
+# save(gof_m5g, file = "6_objects/gof_m5g.RData")
+# load("gof_m5g.RData")
+```
+
+```{r}
+plot(gof_m5g, mfrow=F)
+plot(gof_m5g$`Edge-wise shared partners`)
+plot(gof_m5g$`Dyad-wise shared partners`)
+plot(gof_m5g$`Non-edge-wise shared partners`)
+plot(gof_m5g$`Geodesic distances`)
+plot(gof_m5g$Indegree)
+plot(gof_m5g$Outdegree)
+plot(gof_m5g$`Triad census`)
+# plot(gof_m5g$`Incoming k-star`)
+# plot(gof_m5g$`Outgoing k-star`)
+# plot(gof_m5g$`Modularity (fast & greedy)`)
+# plot(gof_m5g$`Modularity (walktrap)`)
+# plot(gof_m5g$`Tie prediction`)
+```
+
+
+```{r}
+# pdf("gof_m5g.pdf", width = 8, height = 6)
+# plot(gof_m5g)
+# dev.off()
+```
+
+
+
+## summaries
+
+```{r}
+?"gof-methods"
+library(btergm)
+```
+
+
+### gofm
+```{r}
+gofm <- list(gof_m0, gof_m1, gof_m2, gof_m3, gof_m4, gof_m5, gof_m5a, gof_m5b, gof_m5c, gof_m5d, gof_m5e, gof_m5f, gof_m5g)
+names(gofm) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+
+# save(gofm, file = "6_objects/gofm.RData")
+# load("6_objects/gofm.RData")
+```
+
+### gof by stat
+```{r}
+## gof by stat
+gof_geodesic <- list(gof_m0$`Geodesic distances`,
+                     gof_m1$`Geodesic distances`,
+                     gof_m2$`Geodesic distances`,
+                     gof_m3$`Geodesic distances`,
+                     gof_m4$`Geodesic distances`,
+                     gof_m5$`Geodesic distances`,
+                     gof_m5a$`Geodesic distances`,
+                     gof_m5b$`Geodesic distances`,
+                     gof_m5c$`Geodesic distances`,
+                     gof_m5d$`Geodesic distances`,
+                     gof_m5e$`Geodesic distances`,
+                     gof_m5f$`Geodesic distances`,
+                     gof_m5g$`Geodesic distances`)
+
+names(gof_geodesic) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_indegree <- list(gof_m0$Indegree,
+                     gof_m1$Indegree,
+                     gof_m2$Indegree,
+                     gof_m3$Indegree,
+                     gof_m4$Indegree,
+                     gof_m5$Indegree,
+                     gof_m5a$Indegree,
+                     gof_m5b$Indegree,
+                     gof_m5c$Indegree,
+                     gof_m5d$Indegree,
+                     gof_m5e$Indegree,
+                     gof_m5f$Indegree,
+                     gof_m5g$Indegree)
+
+names(gof_indegree) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_outdegree <- list(gof_m0$Outdegree,
+                      gof_m1$Outdegree,
+                      gof_m2$Outdegree,
+                      gof_m3$Outdegree,
+                      gof_m4$Outdegree,
+                      gof_m5$Outdegree,
+                      gof_m5a$Outdegree,
+                      gof_m5b$Outdegree,
+                      gof_m5c$Outdegree,
+                      gof_m5d$Outdegree,
+                      gof_m5e$Outdegree,
+                      gof_m5f$Outdegree,
+                      gof_m5g$Outdegree)
+
+names(gof_outdegree) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_esp <- list(gof_m0$`Edge-wise shared partners`,
+                gof_m1$`Edge-wise shared partners`,
+                gof_m2$`Edge-wise shared partners`,
+                gof_m3$`Edge-wise shared partners`,
+                gof_m4$`Edge-wise shared partners`,
+                gof_m5$`Edge-wise shared partners`,
+                gof_m5a$`Edge-wise shared partners`,
+                gof_m5b$`Edge-wise shared partners`,
+                gof_m5c$`Edge-wise shared partners`,
+                gof_m5d$`Edge-wise shared partners`,
+                gof_m5e$`Edge-wise shared partners`,
+                gof_m5f$`Edge-wise shared partners`,
+                gof_m5g$`Edge-wise shared partners`)
+
+
+names(gof_esp) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_dsp <- list(gof_m0$`Dyad-wise shared partners`,
+                gof_m1$`Dyad-wise shared partners`,
+                gof_m2$`Dyad-wise shared partners`,
+                gof_m3$`Dyad-wise shared partners`,
+                gof_m4$`Dyad-wise shared partners`,
+                gof_m5$`Dyad-wise shared partners`,
+                gof_m5a$`Dyad-wise shared partners`,
+                gof_m5b$`Dyad-wise shared partners`,
+                gof_m5c$`Dyad-wise shared partners`,
+                gof_m5d$`Dyad-wise shared partners`,
+                gof_m5e$`Dyad-wise shared partners`,
+                gof_m5f$`Dyad-wise shared partners`,
+                gof_m5g$`Dyad-wise shared partners`)
+
+
+names(gof_dsp) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_triad <- list(gof_m0$`Triad census`,
+                  gof_m1$`Triad census`,
+                  gof_m2$`Triad census`,
+                  gof_m3$`Triad census`,
+                  gof_m4$`Triad census`,
+                  gof_m5$`Triad census`,
+                  gof_m5a$`Triad census`,
+                  gof_m5b$`Triad census`,
+                  gof_m5c$`Triad census`,
+                  gof_m5d$`Triad census`,
+                  gof_m5e$`Triad census`,
+                  gof_m5f$`Triad census`,
+                  gof_m5g$`Triad census`)
+
+names(gof_triad) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+
+gof_istar <- list(gof_m0$`Incoming k-star`,
+                  gof_m1$`Incoming k-star`,
+                  gof_m2$`Incoming k-star`,
+                  gof_m3$`Incoming k-star`,
+                  gof_m4$`Incoming k-star`,
+                  gof_m5$`Incoming k-star`,
+                  gof_m5a$`Incoming k-star`,
+                  gof_m5b$`Incoming k-star`,
+                  gof_m5c$`Incoming k-star`,
+                  gof_m5d$`Incoming k-star`,
+                  gof_m5e$`Incoming k-star`,
+                  gof_m5f$`Incoming k-star`,
+                  gof_m5g$`Incoming k-star`)
+
+
+names(gof_istar) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_ostar <- list(gof_m0$`Outgoing k-star`,
+                  gof_m1$`Outgoing k-star`,
+                  gof_m2$`Outgoing k-star`,
+                  gof_m3$`Outgoing k-star`,
+                  gof_m4$`Outgoing k-star`,
+                  gof_m5$`Outgoing k-star`,
+                  gof_m5a$`Outgoing k-star`,
+                  gof_m5b$`Outgoing k-star`,
+                  gof_m5c$`Outgoing k-star`,
+                  gof_m5d$`Outgoing k-star`,
+                  gof_m5e$`Outgoing k-star`,
+                  gof_m5f$`Outgoing k-star`,
+                  gof_m5g$`Outgoing k-star`)
+
+
+names(gof_ostar) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_fastgreedy<- list(gof_m0$`Modularity (fast & greedy)`,
+                       gof_m1$`Modularity (fast & greedy)`,
+                       gof_m2$`Modularity (fast & greedy)`,
+                       gof_m3$`Modularity (fast & greedy)`,
+                       gof_m4$`Modularity (fast & greedy)`,
+                       gof_m5$`Modularity (fast & greedy)`,
+                       gof_m5a$`Modularity (fast & greedy)`,
+                       gof_m5b$`Modularity (fast & greedy)`,
+                       gof_m5c$`Modularity (fast & greedy)`,
+                       gof_m5d$`Modularity (fast & greedy)`,
+                       gof_m5e$`Modularity (fast & greedy)`,
+                       gof_m5f$`Modularity (fast & greedy)`,
+                       gof_m5g$`Modularity (fast & greedy)`)
+
+
+names(gof_fastgreedy) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_walktrap <- list(gof_m0$`Modularity (walktrap)`,
+                         gof_m1$`Modularity (walktrap)`,
+                         gof_m2$`Modularity (walktrap)`,
+                         gof_m3$`Modularity (walktrap)`,
+                         gof_m4$`Modularity (walktrap)`,
+                         gof_m5$`Modularity (walktrap)`,
+                         gof_m5a$`Modularity (walktrap)`,
+                         gof_m5b$`Modularity (walktrap)`,
+                         gof_m5c$`Modularity (walktrap)`,
+                         gof_m5d$`Modularity (walktrap)`,
+                         gof_m5e$`Modularity (walktrap)`,
+                         gof_m5f$`Modularity (walktrap)`,
+                         gof_m5g$`Modularity (walktrap)`)
+
+
+names(gof_walktrap) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+```{r}
+gof_rocpr <- list(gof_m0$`Tie prediction`,
+                  gof_m1$`Tie prediction`,
+                  gof_m2$`Tie prediction`,
+                  gof_m3$`Tie prediction`,
+                  gof_m4$`Tie prediction`,
+                  gof_m5$`Tie prediction`,
+                  gof_m5a$`Tie prediction`,
+                  gof_m5b$`Tie prediction`,
+                  gof_m5c$`Tie prediction`,
+                  gof_m5d$`Tie prediction`,
+                  gof_m5e$`Tie prediction`,
+                  gof_m5f$`Tie prediction`,
+                  gof_m5g$`Tie prediction`)
+names(gof_rocpr) <- c("gof_m0", "gof_m1", "gof_m2", "gof_m3", "gof_m4", "gof_m5", "gof_m5a", "gof_m5b", "gof_m5c", "gof_m5d", "gof_m5e", "gof_m5f", "gof_m5g")
+```
+
+
+
+### gof stats all together
+
+```{r}
+# gof_stats = list with all gof stats, which themselves contain said stats for m0-m5g
+
+gof_stats <- list(gof_geodesic,gof_outdegree,gof_indegree,gof_esp,gof_dsp,gof_triad,gof_istar,gof_ostar,gof_fastgreedy,gof_walktrap,gof_rocpr)
+
+names(gof_stats) <- c("gof_geodesic", "gof_outdegree", "gof_indegree", "gof_esp", "gof_dsp", "gof_triad","gof_istar","gof_ostar","gof_fastgreedy","gof_walktrap","gof_rocpr")
+# save(gof_stats, file = "6_objects/gof_stats.RData")
+# load("6_objects/gof_stats.RData")
+```
+
+```{r}
+# save(gof_geodesic, file = "6_objects/gof_geodesic.RData")
+# load("6_objects/gof_geodesic.RData")
+# save(gof_outdegree, file = "6_objects/gof_outdegree.RData")
+# load("6_objects/gof_outdegree.RData")
+# save(gof_indegree, file = "6_objects/gof_indegree.RData")
+# load("6_objects/gof_indegree.RData")
+# save(gof_esp, file = "6_objects/gof_esp.RData")
+# load("6_objects/gof_esp.RData")
+# save(gof_dsp, file = "6_objects/gof_dsp.RData")
+# load("6_objects/gof_dsp.RData")
+# save(gof_triad, file = "6_objects/gof_triad.RData")
+# load("6_objects/gof_triad.RData")
+# save(gof_istar, file = "6_objects/gof_istar.RData")
+# load("6_objects/gof_istar.RData")
+# save(gof_ostar, file = "6_objects/gof_ostar.RData")
+# load("6_objects/gof_ostar.RData")
+# save(gof_fastgreedy, file = "6_objects/gof_fastgreedy.RData")
+# load("6_objects/gof_fastgreedy.RData")
+# save(gof_walktrap, file = "6_objects/gof_walktrap.RData")
+# load("6_objects/gof_walktrap.RData")
+# save(gof_rocpr, file = "6_objects/gof_rocpr.RData")
+# load("6_objects/gof_rocpr.RData")
+```
+
+
+
+## compare models' gof
+
+```{r}
+plot(gof_m0$Outdegree, main ="m0")
+plot(gof_m1$Outdegree, main ="m1")
+plot(gof_m2$Outdegree, main ="m2")
+plot(gof_m3$Outdegree, main ="m3")
+plot(gof_m4$Outdegree, main ="m4")
+```
+
+```{r}
+plot(gof_m0$Indegree, main ="m0")
+plot(gof_m1$Indegree, main ="m1")
+plot(gof_m2$Indegree, main ="m2")
+plot(gof_m3$Indegree, main ="m3")
+plot(gof_m4$Indegree, main ="m4")
+```
+
+```{r}
+plot(gof_m0$`Edge-wise shared partners`, main ="m0")
+plot(gof_m1$`Edge-wise shared partners`, main ="m1")
+plot(gof_m2$`Edge-wise shared partners`, main ="m2")
+plot(gof_m3$`Edge-wise shared partners`, main ="m3")
+plot(gof_m4$`Edge-wise shared partners`, main ="m4")
+```
+
+```{r}
+plot(gof_m0$`Dyad-wise shared partners`, main ="m0")
+plot(gof_m1$`Dyad-wise shared partners`, main ="m1")
+plot(gof_m2$`Dyad-wise shared partners`, main ="m2")
+plot(gof_m3$`Dyad-wise shared partners`, main ="m3")
+plot(gof_m4$`Dyad-wise shared partners`, main ="m4")
+```
+
+```{r}
+# plot(gof_m0$`Non-edge-wise shared partners`, main ="m0")
+# plot(gof_m1$`Non-edge-wise shared partners`, main ="m1")
+# plot(gof_m2$`Non-edge-wise shared partners`, main ="m2")
+# plot(gof_m3$`Non-edge-wise shared partners`, main ="m3")
+# plot(gof_m4$`Non-edge-wise shared partners`, main ="m4")
+```
+
+```{r}
+plot(gof_m0$`Geodesic distances`, main ="m0", xlim = 10)
+plot(gof_m1$`Geodesic distances`, main ="m1", xlim = 10)
+plot(gof_m2$`Geodesic distances`, main ="m2", xlim = 10)
+plot(gof_m3$`Geodesic distances`, main ="m3", xlim = 10)
+plot(gof_m4$`Geodesic distances`, main ="m4", xlim = 10)
+```
+
+```{r}
+plot(gof_m0$`Triad census`, main ="m0")
+plot(gof_m1$`Triad census`, main ="m1")
+plot(gof_m2$`Triad census`, main ="m2")
+plot(gof_m3$`Triad census`, main ="m3")
+plot(gof_m4$`Triad census`, main ="m4")
+```
+
+```{r}
+plot(gof_m0$`Incoming k-star`, main ="m0")
+plot(gof_m1$`Incoming k-star`, main ="m1")
+plot(gof_m2$`Incoming k-star`, main ="m2")
+plot(gof_m3$`Incoming k-star`, main ="m3")
+plot(gof_m4$`Incoming k-star`, main ="m4")
+```
+
+```{r}
+plot(gof_m0$`Outgoing k-star`, main ="m0")
+plot(gof_m1$`Outgoing k-star`, main ="m1")
+plot(gof_m2$`Outgoing k-star`, main ="m2")
+plot(gof_m3$`Outgoing k-star`, main ="m3")
+plot(gof_m4$`Outgoing k-star`, main ="m4")
+```
+
+```{r}
+plot(gof_m0$`Tie prediction`, main ="m0")
+plot(gof_m1$`Tie prediction`, main ="m1")
+plot(gof_m2$`Tie prediction`, main ="m2")
+plot(gof_m3$`Tie prediction`, main ="m3")
+plot(gof_m4$`Tie prediction`, main ="m4")
+```
+
+
+## trouble shooting gof()
+
+In case gof() does not output degree or shared partner related stats, consult this thread: https://github.com/leifeld/btergm/issues/19
+
+CLOSE R, OPEN AGAIN AND THIS TIME ONLY GET PACKAGE BTERGM FROM LIBRARY, NOTHING ELSE. It seems the btergm::gof() function does not  work properly when sometimes masked by sth. IT'S HMISC!! DON'T EVER OPEN HMISC WHILE USING BTERGM::GOF()
+
+```{r}
+# library(statnet) 
+# library(xergm.common)
+# library(btergm)
+# set.seed(9)
+# 
+# # example from Leifeld et al. (2018)
+# data("alliances", package = "xergm.common")
+# model <- btergm(allyNet ~ edges + gwesp(0, fixed = TRUE) + edgecov(LSP) + edgecov(warNet) + nodecov("polity") + nodecov("cinc") + absdiff("polity") + absdiff("cinc") + edgecov(contigMat), R = 5, parallel = "snow", ncpus = 2)
+# 
+# # before loading Hmisc =)
+# gof_1 <- btergm::gof(model, nsim = 5, parallel = "snow", ncpus = 2,
+#               statistics = c(ideg, odeg, esp, dsp, istar, ostar))
+# plot(gof_1) # fine
+
+# after loading Hmisc =(
+# library(Hmisc)
+# gof_2 <- btergm::gof(model, nsim = 5, parallel = "snow", ncpus = 2,
+#               statistics = c(ideg, odeg, esp, dsp, istar, ostar))
+# plot(gof_2) # Fehler in plot.gof(gof_2) : 'x' does not contain any gof objects.
+```
+
+
+# XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+# X Functions conversion table
+
+!!odds = odds ratio in our case because the odds estimate we get (by converting logit --> exp(logit)) refer to the event of of having a tie, which is to be compared to odds of having no tie
+= odds tie present / odds tie absent = odds ratio
+
+#### old function (check again if useful)
+
+bind stats log-odds,odds, probability (inc. se)
+```{r}
+# only for tergm_CMLE objects
+tergm_stats2 <- function(tergm_object) {
+  library(dplyr)
+  
+  coefs <- summary(tergm_object)$coefficients
+  df <- as.data.frame(coefs)
+  
+  logit <- df$Estimate
+  std_error <- round(df$`Std. Error`, 4) 
+  mcmc_pc <- round(df$`MCMC %`, 4)
+  z <- round(df$`z value`, 4)
+  sig <- round(df$`Pr(>|z|)`, 4)
+  odds <- round(exp(logit), 4)
+  p <-  round(odds/(1 + odds), 4) # probability of tie existing
+  q <-  round(1 - p, 4)
+  
+  df <- cbind(df[,-c(1:5)], logit, odds, p, q, std_error, mcmc_pc, z, sig)
+  return(df)
+}
+
+# save(tergm_stats2, file = "6_objects/tergm_stats2.RData")
+# load("tergm_stats2.RData")
+```
+
+#### template: conversion given different inputs
+
+Manual calculation
+```{r}
+## logit to odds to p
+# odds <- exp(logit)
+# p <- 1/ (1 + exp(-(logit)))
+# p <- exp(logit)/(1 + exp(logit))
+
+## odds to logit to p
+# logit <- log(odds)
+# p <- odds/(1 + odds)
+
+## p to odds to logit
+# odds <- p/(1-p) 
+# logit <- log(p/(1-p))
+```
+
+Ready made functions
+```{r}
+## convert logit or odds to probability
+# effectsize::odds_to_probs(logit, log=T) 
+# stats::plogis(logit)
+```
+
+
+
+#### btergm: my function 1 (general conversion of logit)
+
+(2.12-1)
+
+```{r}
+
+## logit to odds to probability
+convert_logit <- function(logit){
+  
+  logit <- round(logit,4)
+  
+  odds <- exp(logit)
+  odds <- round(odds,4) # odds of tie existing
+  
+  p <- odds / (1 + odds) # probability of tie existing
+  p <- round(p,4)
+  # round((odds/(1 + odds)), 4)
+  
+  q <- round(1 - p, 4)  # probability of tie not existing
+  
+  df <- data.frame(logit,odds,p,q)
+  
+  return(df)
+}
+
+## check  function
+# convert_logit(coef(m4)) # gwesp logit 0.128 --> prob 0.532
+
+# save(convert_logit, file="convert_logit.RData")
+# load("convert_logit.RData")
+```
+
+
+additional checks
+```{r}
+library(stats)
+
+# plogis() turns logits to probs: exp(logit)/(1 + exp(logit))
+plogis(0.128) # gwesp logit 0.128 --> prob 0.532
+# plogis(theta) 
+
+# reverse: qlogis() turns probs to logits
+qlogis(0.532) # gwesp prob 0.532 --> logit 0.128
+```
+
+```{r}
+convert_logit(-1.1)
+plogis(-1.1) # logit = -1.1 --> prob = 0.25
+qlogis(0.25)
+```
+
+
+
+#### btergm: my function 2 (short, converts coefs)
+
+```{r}
+## m4 estimates
+# summary(m4)
+# m4_logit <- coef(m4)
+# m4_odds <- exp(coef(m4))
+# df <- cbind(m4_logit, m4_odds)
+# options(scipen = 999)
+# df <- round(df,4)
+# df <- as.data.frame(m4@coef)
+# colnames(df)[1] <- "estimate"
+# df1 <- rownames_to_column(df, var = "terms")
+```
+
+```{r}
+## model coefs i.e. thetas in form of logits, convert to odds to probability
+# convert_logit2 <- function(tergm){ # input the model object
+#   
+#   # load pck
+#   library(dplyr)
+#   library(tibble)
+#   
+#   # retrieve model estimates
+#   df <- data.frame(logit = tergm@coef)
+#   
+#   # compute stats
+#   df <- df %>% 
+#     tibble::rownames_to_column(.,var = "terms") %>% 
+#     dplyr::mutate(
+#       logit = round(logit, 4),
+#       odds = round(exp(logit),4), # odds of tie existing
+#       p = round((odds / (1 + odds)),4), # probability of tie existing
+#       q = round(1 - p, 4)) # probability of tie not existing
+#   
+#   return(df)
+# }
+
+
+## check  function
+convert_logit2(m4) # gwesp logit 0.11 --> odds 1.11 --> prob 0.53
+# convert_logit2(m1)
+
+# save(convert_logit2, file="convert_logit2.RData")
+# load("convert_logit2.RData")
+```
+
+
+
+#### btergm: my function 3 (long, converts coefs inc. bootstrap CIs)
+
+```{r}
+# df <- df %>% 
+#   tibble::remove_rownames() %>% 
+#   dplyr::rename(
+#       logit = `Estimate`, 
+#       logit_bmean = `Boot mean`, # bootstrap mean
+#       logit_lci = `2.5%`, 
+#       logit_uci = `97.5%`)
+
+# df <- data.frame(confint(m4))
+# df2 <- data.frame(summary(m4))
+# identical(df,df2) # true
+
+# df3 <- as.data.frame(summary(m4))
+# df4 <- as.data.frame(confint(m4)) # same as df4
+# identical(df3,df4) # true
+
+```
+
+
+convert btergm estimates (log-odds) to odds and probabilities and save in a data frame
+```{r}
+# library(dplyr)
+# library(tidyverse)
+
+## function to convert log-odds estimates (for btergmobjects)
+convert_logit3 <- function(tergm) { # input the model object
+  
+  # load pck
+  library(dplyr)
+  library(tibble)
+  
+  # retrieve model results, save as df
+  df <- as.data.frame(confint(tergm))
+  
+  df <- df %>% 
+    # retrieve & rename statistics from model object
+    tibble::rownames_to_column(.,var = "terms") %>%
+    dplyr::rename(
+           logit = `Estimate`, 
+           logit_bmean = `Boot mean`, # bootstrap mean
+           logit_lci = `2.5%`, 
+           logit_uci = `97.5%`
+    ) %>%
+    
+    # compute statistics & round to 4 decimals 
+    dplyr::mutate(
+           # log odds
+           logit = round(logit, 4),
+           logit_bmean = round(logit_bmean, 4),
+           logit_lci = round(logit_lci, 4),
+           logit_uci = round(logit_uci, 4),
+           
+           # odds
+           odds = round(exp(logit), 4),
+           odds_bmean = round(exp(logit_bmean), 4),
+           odds_lci = round(exp(logit_lci), 4),
+           odds_uci = round(exp(logit_uci), 4),
+           
+           # probability of tie existing
+           p = round(odds / (1 + odds), 4),
+           p_bmean = round(odds_bmean / (1 + odds_bmean), 4),
+           p_lci = round(odds_lci / (1 + odds_lci), 4),
+           p_uci = round(odds_uci / (1 + odds_uci), 4),
+           
+           # probability of tie not existing
+           q = round(1 - p, 4),
+           q_bmean = round(1 - p_bmean, 4),
+           q_lci = round(1 - p_lci, 4),
+           q_uci = round(1 - p_uci, 4)
+           
+    )
+  
+  # save dfs
+  logit_df <- df %>% 
+    dplyr::select(terms, logit, logit_bmean, logit_lci, logit_uci)
+  
+  odds_df <- df %>% 
+    dplyr::select(terms, odds, odds_bmean, odds_lci, odds_uci)
+  
+  p_df <- df %>% 
+    dplyr::select(terms, p, p_bmean, p_lci, p_uci)
+  
+  q_df <- df %>% 
+    dplyr::select(terms, q, q_bmean, q_lci, q_uci)
+  
+  all_df <- df %>% 
+    dplyr::select(terms,
+                  logit, logit_bmean, logit_lci, logit_uci,
+                  odds, odds_bmean, odds_lci, odds_uci,
+                  p, p_bmean, p_lci, p_uci,
+                  q, q_bmean, q_lci, q_uci)
+  
+  # return(logit_df, odds_df, p_df, q_df, all_df)
+  
+  # Store dataframes in a list
+  result_list <- list(
+    all_df = df %>% dplyr::select(terms, 
+                       logit, logit_bmean, logit_lci, logit_uci,
+                       odds, odds_bmean, odds_lci, odds_uci,
+                       p, p_bmean, p_lci, p_uci,
+                       q, q_bmean, q_lci, q_uci),
+    logit_df = df %>% dplyr::select(terms, logit, logit_bmean, logit_lci, logit_uci),
+    odds_df = df %>% dplyr::select(terms, odds, odds_bmean, odds_lci, odds_uci),
+    p_df = df %>% dplyr::select(terms, p, p_bmean, p_lci, p_uci),
+    q_df = df %>% dplyr::select(terms, q, q_bmean, q_lci, q_uci),
+    est_df = df %>% dplyr::select(terms, logit, odds, p, q),
+    bmean_df = df %>% dplyr::select(terms, logit_bmean, odds_bmean, p_bmean, q_bmean),
+    lci_df = df %>% dplyr::select(terms, logit_lci, odds_lci, p_lci, q_lci),
+    uci_df = df %>% dplyr::select(terms, logit_uci, odds_uci, p_uci, q_uci)
+    )
+  
+  return(result_list)
+  
+}
+
+## check  function
+# alist <- convert_logit3(m4) # gwesp logit 0.128 --> prob 0.532
+# alist$est_df
+# rm(alist)
+# rm(result_list)
+
+# save(convert_logit3, file="convert_logit3.RData")
+# load("convert_logit3.RData")
+```
+
+
+## 4.5. Coefs df (OR, logit, prob)
+
+DF with model coefs as logits, odds, p
+
+```{r}
+m4_df <- convert_logit3(m4)
+View(m4_df)
+```
+
+##### 
+```{r}
+a <- m4_df$odds_df
+b <- m4_df$lci
+```
+
+
+## 4.6. tErgmStats (evolution of stats)
+```{r}
+# library(ergm)
+# library(tsna)
+# m4@coef
+# tErgmStats(iat_dyn, "~ edges+triangle")
+```
+
+
+# 6) MODEL DEGENERACY
+
+Leifeld et al. 2018: 29 f.
+```{r}
+check_m4 <- checkdegeneracy(m4, nsim = 100)
+check_m4
+```
+
+
+
+# 7) COMPARE REAL VS SIMULATED
+```{r}
+# set.seed(1902)
+# sim_m0 <- simulate(m0, verbose = TRUE, seed = 5) 
+# sim_m1 <- simulate(m1, verbose = TRUE, seed = 5)
+# sim_m2 <- simulate(m2, verbose = TRUE, seed = 5)
+# sim_m3 <- simulate(m3, verbose = TRUE, seed = 5)
+# sim_m4 <- simulate(m4, verbose = TRUE, seed = 5)
+```
+
+Choose some stats that are not in the models and compare simulated to observed network.
+```{r}
+# summary(iat_snet$t6 ~ edges + degree(0:5) + triangle) # we choose to look at the 3 statistics density (even though we have this in the model via edges), degree distribution for degrees from 1-5, triangles of our empirical network
+
+# summary(iat_snet$t6 ~ edges + degree(0:20) + triangle) # same, but with degree distribution for degrees from 1-20
+```
+
+```{r}
+# now we compare the 3 stats among the 4 model simulated nw with our lhds nw
+# rowgof <- rbind(summary(iat_snet$t6 ~ edges + degree(0:5) + triangle), 
+#                 summary(sim_m0 ~ edges + degree(0:5) + triangle), 
+#                 summary(sim_m1 ~ edges + degree(0:5) + triangle), 
+#                 summary(sim_m2 ~ edges + degree(0:5) + triangle), 
+#                 summary(sim_m3 ~ edges + degree(0:5) + triangle) ) 
+# rownames(rowgof) <- c("iat", "null","endogeneous","edge covariates","nodal covariates")
+# rowgof
+```
+
+
+Among the 4 simulated nws, the one coming closest to the statistic in terms of...
+- density (i.e. edges): Main effects model, but only minimally better than the other models (d = 7 edges)
+- degree distribution: for degrees 0-1, the two homophily models are far superior than the null and main models, the latter 2 underestimating edges. However, for degrees 2-3, the null and main models do similarly well compared to the homop models. Then starting with degrees 4-5, the null and main models are doing worse, thus overestimating amount of nodes with 4-5 connections. 
+- clustering: the homop models are clearly superior, by large
+
+
+# 8) INTERPRETATION
+
+
+## a) Estimation methods
+
+Ref: Leifeld, Philip, Skyler J. Cranmer and Bruce A. Desmarais (2017): Temporal Exponential Random Graph Models with btergm: Estimation and Bootstrap Confidence Intervals. Journal of Statistical Software 83(6): 1-36. http://dx.doi.org/10.18637/jss.v083.i06.
+
+"Temporal Exponential Random Graph Models (TERGM) estimated by maximum pseudolikelihood with bootstrapped confidence intervals or Markov Chain Monte Carlo maximum likelihood. Goodness of fit assessment for ERGMs, TERGMs, and SAOMs. Micro-level interpretation of ERGMs and TERGMs."
+
+"The btergm package implements TERGMs with MPLE and bootstrapped confidence intervals (btergm function) or MCMC MLE (mtergm function). Goodness of fit assessment for ERGMs, TERGMs, SAOMs, and dyadic independence models is possible with the generic gof function and its various methods. New networks can be simulated from TERGMs using the simulate.btergm function. The package also implements micro-level interpretation for ERGMs and TERGMs using the interpret function. Furthermore, the package contains the chemnet and knecht datasets for estimating (T)ERGMs. To display citation information, type citation("btergm")." (Leifeld et al 2017: https://www.rdocumentation.org/packages/btergm/versions/1.9.13/topics/btergm-package)
+
+"Temporal Exponential Random Graph Models (TERGM) estimated by maximum pseudolikelihood with bootstrapped confidence intervals or Markov Chain Monte Carlo maximum likelihood. Goodness of fit assessment for ERGMs, TERGMs, and SAOMs. Micro-level interpretation of ERGMs and TERGMs. The methods are 
+described in Leifeld, Cranmer and Desmarais (2018), JStatSoft <doi:10.18637/jss.v083.i06>." (btergm documentation version april 2024)
+
+**Estimation methods**
+- btergm: MPLE (Maximum Pseudo-likelihood Estimation with bootstraps confidence intervals)
+- mtergm: MCMC MLE (Markov Chain Monte Carlo Maximum Likelihood Estimation)
+
+- There exist also estimators like conditional MLE (CMLE) & equilibrium generalized method of moments estimator (EGMME)
+
+Look up: https://rdrr.io/cran/btergm/man/btergm-package.html
+
+**Terms:**
+- Temporal i.e. tergm-specific terms (between network dependencies): https://www.rdocumentation.org/packages/btergm/versions/1.9.13/topics/tergm-terms
+- Regular i.e. ergm terms (within network dependencies):
+  https://www.rdocumentation.org/packages/ergm/versions/3.9.4/topics/ergm-terms
+  
+**Micro-level interpretations**
+https://rdrr.io/cran/btergm/man/interpret.html
+
+**ETC**
+  
+  "dyadwise shared partners": how many common neighbours do two vertices have?  
+  "edgewise shared partners": how many common neighbours do two **connected** vertices have? 
+  
+  esp() counts the exact number of shared partners, while gwesp() applies a geometrically decreasing weight to additional shared partners. This means that in gwesp(), the first few shared partners have a larger effect on the probability of a tie than additional shared partners. The rate at which this effect decreases is determined by the decay parameter.
+
+fixed=TRUE in the gwesp() = decay parameter determines how quickly the influence of additional ESPs decreases. A decay parameter close to 0 means that the influence of additional ESPs decreases rapidly, while a decay parameter close to 1 means that it decreases slowly.
+
+**Interpretation**
+  
+  
+```{r}
+# library(statnet)
+# library(btergm)
+# library(speedglm)
+# help("ergm-terms")
+```
+
+
+## b) Interpretation of node terms
+
+The base argument in `nodeocov()` is used to specify the baseline level of the covariate for the odds ratio interpretation. For example, if the covariate is gender with values 0 (male) and 1 (female), setting base=0 means that the effect of nodeocov() is the log odds of a tie between two females relative to a tie between a male and a female. Setting base=1 means that the effect is the log odds of a tie between two males relative to a tie between a male and a female. The default value of base is the minimum value of the covariate. 
+
+In the context of Exponential-Family Random Graph Models (ERGMs), the `nodeicov` term represents the covariate for the node that the edge is pointing to (the receiver of the edge). 
+
+If you have a `nodeicov` term with an estimate of -0.06, it suggests that as the covariate of the receiving node increases by one unit, the log-odds of an edge existing between two nodes decreases by 0.06, holding all other factors constant. 
+
+In other words, nodes with higher values of this particular covariate are less likely to receive edges. This could suggest that whatever characteristic this covariate represents is not attractive or beneficial for the formation of incoming ties in your network.
+
+Remember, this interpretation assumes that all other factors in your model are held constant. The actual effect in your network could be different due to interactions with other factors. 
+
+e.g. 
+numeric: for each additional yearly military confrontation, the probability of a node (country) receiving an edge (diplomatic tie) decreases by approximately 0.48, assuming all other variables in the model are held constant.
+dummy: for countries which control min. of 95% of their territory, the probability of a node (country) receiving an edge (diplomatic tie) is by approximately 0.48 smaller compared to those that do not control min. of 95% of their territory, assuming all other variables in the model are held constant.
+
+
+interpretation e.g. `nodeicov.ln_gdp`:
+The bootstrap confidence interval is a way to estimate the uncertainty of a parameter, such as the coefficient in a regression model. It's based on resampling the data and computing the parameter estimate many times. In your case, the term `nodeicov.ln_gdp` from your model has an estimate of 0.22799. The bootstrap mean, which is the average of the bootstrap estimates, is 0.23668. This suggests that if you were to repeat your study many times, the average estimate would be around 0.23668.
+The 2.5% and 97.5% values represent the lower and upper bounds of the 95% bootstrap confidence interval. This means that if you were to repeat your study many times, 95% of the time the estimate would fall between 0.2112 and 0.2639. 
+
+So, you can be 95% confident that the true value of the `nodeicov.ln_gdp` parameter is between 0.2112 and 0.2639. This range is a measure of the uncertainty of the estimate. If this range is narrow, it suggests that you have a precise estimate. If it's wide, the estimate is imprecise. 
+
+This doesn't mean that the true value cannot fall outside this range. It just means that based on your data and model, it's unlikely. The bootstrap method assumes that your data is a good representation of the population. If this assumption is not met, the confidence intervals may not be accurate.
+
+Bootstrap confidence intervals can be used to perform a type of hypothesis test. Here's how you can do it:
+                                                                                          1. **Formulate your null hypothesis (H0)**: Typically, the null hypothesis states that the parameter of interest equals zero (or some other value). For example, in your case, the null hypothesis could be that the `nodeicov.ln_gdp` coefficient equals zero.
+                                                                                                                                                                            
+2. **Check if the confidence interval includes the null hypothesis value**: If your 95% bootstrap confidence interval does not include the null hypothesis value (in this case, zero), you would reject the null hypothesis at the 95% confidence level. This means that there is sufficient evidence to suggest that the `nodeicov.ln_gdp` coefficient is significantly different from zero.
+                                                                                                                                                                            
+In your case, the 95% bootstrap confidence interval for the `nodeicov.ln_gdp` term is (0.2112, 0.2639), which does not include zero. Therefore, you would reject the null hypothesis that the `nodeicov.ln_gdp` coefficient equals zero at the 95% confidence level.
+                                                                                          Remember, this is not a formal hypothesis test like a t-test or a z-test, but it provides a similar interpretation. The bootstrap method is a non-parametric approach that makes fewer assumptions about the data than traditional parametric tests.
+                                                                                                                                               
+                            
+## c) Interpretation of time dependencies
+                                                                                          the absdiff("democracy") term has an estimate of 0.12, which means that an additional difference in the democracy scores of two countries of one point increases their odds of being allies by 100 · (exp(0.12) − 1) ≈ 13% on average conditional on the rest of the network. The effect is significant because 0 is outside the confidence interval of [−0.14; −0.11].
+                                                                                                                                                                            
+1) `stability` memory term: When one wishes to treat the stability of existing and non-existing relationships equivalently, the stability term is useful. The statistic counts the number of dyads that are stable between t−1 and t.
+                                                                                          * Results on `memory(type = "stability")`: great amount of stability over time in open as well as closed dyads. The dyadic state at t-1 increases the same dyadic state at t by factor exp(5), which means factor 148 (!) in probability terms!
+                                                                                          2) "interactions" with time. `timecov(transform = function(t) t)` is a time covariate that simply checks whether there is a (linear) time trend in the number of edges over time. The argument accepts any functional form provided as a function, for instance, linear time trends (see above) or quadratic time trends (would be `(transform = function(t) t^2)`.
+                                                                                          * `timecov(transform = function(t) t)`:  without x variable just the general *time trend* of the networks, here:linear and *not* significant. 
+                                                                                          * `timecov(warNet, transform = function(t) t)`: interaction of warNet with linear time-trend.                                                        
+                                                                                          Checks for linear or non-linear time trends with regard to edge formation. Can be combined with a covariate to create an interaction effect between a dyadic covariate and time in order to test whether the importance of a covariate increases or decreases over time. Default (x = NULL, minimum = 1, maximum = NULL, transform = function(t) t) = linear growth in edges. For time steps below the minimum value and above the maximum value, the time covariate is set to 0. Minimum & maximum values can create step-wise, discrete effects, for example to use a value of 0 up to an external event and 1 from that event onwards in order to control for influences of external events.
+
+3) `innovation`: Modeling the tendency of new edges to form between observed time periods, ie. counting the number of edges that exist in time t and did not exist in time t−1.
+
+* `innovation` ("edgecov.memory[[i]]"): highly influential mechanism, yet, with *negative* signs. This means, networks exhibit a strong tendency *not* to form new relationships. In this contexts: political alliances are not formed easily.
+
+
+4) `loss`: the reverse of `innovation`. Modeling edge loss directly, ie., counting the number of edges that existed in t−1 and do not exist in t.
+* `loss` ("edgecov.contigMat[[i]]"): highly influential mechanism, but keep in mind the strong (negative) effect of `innovation` too. Thus, neither innovation nor loss are present, i.e., the network is rather stable.
+   
+
+
+
+## d) Revision conversion logit-odds-probability
+
+
+--> Convert theta estimates (i.e. log(odds) aka logit) to odds and probability
+
+**logits range**
+- logit between -5 to +5 --> prob between 0 to ca. 1    --> ca. 100% of range
+- logit between -1 to +1 --> prob between 0.25 to 0.75  --> 50 % of range
+
+e.g. 
+-   logit -4.6 --> prob 0.01
+-   logit 4.6 --> prob 0.99
+
+**log-odd (logit)   vs  odds**
+-   logit negative  =   0-1 odds
+-   logit 0         =   1 odds
+-   logit positive  =   >1 odds
+
+**log-odd (logit)   vs  probability**
+-   logit negative  =   <0.5 prob
+-   logit 0         =   0.5 prob
+-   logit positive  =   >0.5 prob
+
+
+```{r}
+# demonstration 1
+log_odds <- seq(from = -5, to = 5, by = 1)
+y <- plogis(log_odds)
+d <- data.frame(log_odds, y)
+d <- round(d,5)
+head(d, 10)
+```
+
+**visualisation**
+```{r}
+# demonstration 2
+log_odds = seq(from = -5, to = 5, by = 0.25)
+
+odds = exp(log_odds)
+# use 'plogis' function to calculate exp(x)/(1 + exp(x))
+p = plogis(log_odds)
+# use odds/(1+odds) to calculate p a different way
+p2 = odds/(1 + odds)
+# store probability of failure (1-p)
+q = 1 - p
+# store  log_odds and y in data frame for use with ggplot
+d = data.frame(log_odds, odds, p, p2, q)
+head(d, 4)
+```
+
+```{r}
+# library(ggplot2)
+ggplot(d, aes(x = log_odds, y = odds)) +
+geom_line() +
+scale_x_continuous(breaks = seq(-5, 5, by = 1)) +
+labs(title = "odds versus log-odds")
+```
+
+```{r}
+ggplot(d, aes(x = odds, y = p)) +
+geom_line() +
+# scale_x_continuous(breaks = seq(-1, 50, by = 5)) +
+labs(title = "probability versus odds")
+```
+
+```{r}
+ggplot(d, aes(x = log_odds, y = p)) +
+geom_line() +
+geom_hline(aes(yintercept = 0.5),
+colour = "gray",
+linetype = "dashed") +
+geom_vline(aes(xintercept = 0.0),
+colour = "gray",
+linetype = "dashed") +
+scale_x_continuous(breaks = seq(-5, 5, by = 1)) +
+labs(title = "probability versus log-odds")
+```
+
+
+## e) Interpretation logits, odds ratio, p, change in odds
+
+https://libguides.princeton.edu/c.php?g=1321057&p=9718500#s-lg-box-wrapper-36224738
+
+
+Percent Change in the Odds = (Odds Ratio−1)×100
+https://stats.stackexchange.com/questions/363791/logit-interpreting-coefficients-as-probabilities
+
+
+# 2) ETC
+
+## Example squared terms
+
+
+
+```{r}
+# for (i in 1:length(friendship)) {
+#   s <- adjust(sex, friendship[[i]])
+#   friendship[[i]] <- network(friendship[[i]])
+#   friendship[[i]] <- set.vertex.attribute(friendship[[i]], "sex", s)
+#   idegsqrt <- sqrt(degree(friendship[[i]], cmode = "indegree"))
+#   friendship[[i]] <- set.vertex.attribute(friendship[[i]], "idegsqrt", idegsqrt)
+#   odegsqrt <- sqrt(degree(friendship[[i]], cmode = "outdegree")) 
+#   friendship[[i]] <- set.vertex.attribute(friendship[[i]], "odegsqrt", odegsqrt)
+#   }
+# sapply(friendship, network.size)
+```
+
+
+## GWESP
+  - "ERGM models are prone to degeneracy issues. When estimating the model the change
+statistics can behave in such a way that the large majority of the probability distribution
+is placed on either an empty or a full graph." (van der Pol 2018: 858)
+
+- "Studies show that the addition of weights on the degree distribution helps to avoid bi-modal distributions in the parameter space, i.e avoids the generated networks from being either full or close to empty". (van der Pol 2018: 868; Hunter and Handcock, 2006 in Thiemichen 2016: 40).
+
+**Decay coefficients (alpha) of gw terms**
+  The alpha parameter in gwesp.alpha is a decay parameter that governs how unlikely 3, 4, 5, etc. triangles are relative to 1 and 2 triangles. When alpha is high, the probability of a tie is greatly increased by adding another shared partner, even if the pair already have many shared partners. When alpha is low, adding more shared partners (or more triangles) does not greatly increase the probability of a tie if the pair already have a few shared partners2. In other words, the alpha parameter controls the extent to which each additional shared partner contributes to the formation of a tie. (cf. https://sites.duke.edu/dnac/an-ergm-tutorial-using-r/)
+
+"\(\alpha\) controls how much to discount (weight down) 2nd, 3rd, etc. shared partners. ergm will estimate a value for \(\alpha\) by default, but this is generally not a good idea due to the computational burden. Instead, it'll be fixed. The closer \(\alpha\) is to zero, the more dramatic the discounting applied to subsequent shared partners." (https://www.r-bloggers.com/2016/05/ergm-tutorial/)
+
+--> in iat context, higher alpha is more sensible, since we know from the literature that the added value of each shared arms trade partners remains relatively constant for quite some time (heavy tailed). So we'll fix the value to 0.5.
+
+
+## Descriptive overview
+
+```{r}
+# iat_dyn%t%1
+iat_snet$t1
+iat_inet$t1
+```
+
+```{r}
+sapply(iat_snet, function(x) length(network.vertex.names(x))) # n = same across tspells
+sapply(iat_snet, network.edgecount) # m increased between 1993-2023, i.e. nw got denser
+```
+
+```{r}
+# pdf("alliances.pdf", width = 9, height = 3)
+# par(mfrow = c(1, 3), mar = c(0, 0, 1, 0))
+# for (i in (length(allyNet) - 2):length(allyNet)) {
+#   plot(allyNet[[i]], main = paste("t =", i))
+#   }
+# dev.off()
+```
+
+## OR more codes
+
+```{r}
+# summary(m3a, level = 0.95)
+# screenreg(m3a)
+# m3a@formula
+# names(m3a@coef)
+
+# coef(m3a) %>% round(.,4) # logit
+# 
+# exp(coef(m3a)) %>% round(.,4) # OR e^ with predictor x --> OR for each additional unit of x
+# exp(confint(m3a)) %>% round(.,4)
+# 
+# 2^(coef(m3a)) %>% round(.,4) # OR 2^ with ln(x) predictors --> OR for each doubling of x
+# 2^(confint(m3a)) %>% round(.,4)
+```
+
+
+
+# 8) NOTES
+
+## writing up
+
+## notes for analysis
+-   Lag?: start using covs & dyadic from 1993 as t0, but start iat network from 1993? NO! Only lag with regards to network statistics
+-   When to use mean (yearly average) and when to use sum values for network objects as weight? Does that change anything to results?
+  -   Scaling issues
+
+## discussion
+-   not fully using all theoretically relevant covariates
+-   scaling issues
+-   NAs resolved
+
+
+
+## todo
+- separate ERGMs for each time period (or TERGM between 2 time steps)
+
+- try out gwidegree(1, fixed = TRUE, cutoff=15): Geometrically weighted in-degree distribution & gwodegree(1, fixed = TRUE, cutoff=15): Geometrically weighted out-degree distribution
+- try degree(2:6) or similar
+- examine des.stats for more structural terms --> which are most definitely not random?
+  - try triangles
+- try micro-interpretations with function `interpret()`
+
+- rerun models with different 
+- structural terms (inc gwdegree), 
+- add reciprocity
+- different coding (dummy vs numeric),
+- only one form of conflict nodeicov/nodeocov
+- milex instead of milbur
+- separable model
+- retrieve results at 0.05, 0.01 etc
+
+- gof
+
+
+check out these packages
+
+-   coefplot
+-   mgcv
+
+
+
+
+
+```{r}
+## functions
+# load("convert_logit.RData")
+```
+
+# OUTPUTS
+```{r}
+# load("6_objects/iat_snet.RData")
+
+load("6_objects/m0.RData")
+load("6_objects/m1.RData")
+load("6_objects/m2.RData")
+load("6_objects/m3.RData")
+load("6_objects/m4.RData")
+load("6_objects/m5.RData")
+
+load("6_objects/m5a.RData")
+load("6_objects/m5b.RData")
+load("6_objects/m5c.RData")
+load("6_objects/m5d.RData")
+load("6_objects/m5e.RData")
+load("6_objects/m5f.RData")
+load("6_objects/m5g.RData")
+
+# load("6_objects/m4_t1t2.RData")
+# load("6_objects/m4_t2t3.RData")
+# load("6_objects/m4_t3t4.RData")
+# load("6_objects/m4_t4t5.RData")
+# load("6_objects/m4_t5t6.RData")
+
+# load("6_objects/stergm_0.RData")
+# load("6_objects/stergm_persist.RData")
+# load("6_objects/stergm_form.RData")
+# load("6_objects/tergm_stats.RData")
+# load("6_objects/tergm_stats2.RData")
+```
+
+```{r}
+load("6_objects/gof_m0.RData")
+load("6_objects/gof_m1.RData")
+load("6_objects/gof_m2.RData")
+load("6_objects/gof_m3.RData")
+load("6_objects/gof_m4.RData")
+load("6_objects/gof_m5.RData")
+
+load("6_objects/gof_m5a.RData")
+load("6_objects/gof_m5b.RData")
+load("6_objects/gof_m5c.RData")
+load("6_objects/gof_m5d.RData")
+load("6_objects/gof_m5e.RData")
+load("6_objects/gof_m5f.RData")
+load("6_objects/gof_m5g.RData")
+```
+
+
+```{r}
+# rm(m0)
+# rm(m1)
+# rm(m2)
+# rm(m3)
+# rm(m4)
+# rm(m5)
+# 
+# rm(m5a)
+# rm(m5b)
+# rm(m5c)
+# rm(m5d)
+# rm(m5e)
+# rm(m5f)
+# rm(m5g)
+```

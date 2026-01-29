@@ -1,0 +1,1045 @@
+---
+title: "INTERNATIONAL ARMS TRADE NETWORKS: DESCRIPTIVE ANALYSIS TERGM"
+author: "QN Nguyen"
+date: "`r Sys.Date()`"
+format:
+  html:
+    theme: cosmo
+    highlight-style: tango
+    toc: true
+    toc-depth: 2
+    toc-float: true
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# SETTINGS
+
+```{r}
+knitr::opts_chunk$set(
+  fig.width = 12,
+  fig.height = 10,
+  fig.path = "Figs/",
+  fig.align = "center",
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  include = TRUE
+)
+
+options(
+  xtable.comment = FALSE,
+  scipen = 9999,
+  tinytex.verbose = TRUE
+)
+```
+
+```{r}
+### BASIC TOOLS
+pacman::p_load(remotes, devtools, dplyr, tidyr, sjmisc, Hmisc, stargazer, tibble)
+
+### VISUALIZATIONS
+pacman::p_load(ggplot2)
+
+### SNA TOOLS
+pacman::p_load(network, igraph, statnet, intergraph, sna, tsna, ndtv, networkDynamic)
+```
+
+# DATA IMPORT
+
+```{r}
+load("cov_agg.RData")
+load("cov_net.RData")
+
+load("iat_inet.RData")
+load("iat_snet.RData")
+load("iat_dyn.RData")
+
+load("iat_dyn_noiso.RData")
+load("iat_snet_noiso.RData")
+load("iat_inet_noiso.RData")
+
+tspells <- c("1993-97","1998-02","2003-07","2008-12","2013-17","2018-23")
+```
+
+# 1A) CALCULATE GRAPH-LEVEL STATISTICS
+
+## Graph dimensions
+
+```{r}
+library(tibble)
+library(dplyr)
+library(network)
+library(networkDynamic)
+library(tsna)
+
+sapply(iat_snet, function(x) length(network.vertex.names(x)))
+
+glob_m <- sapply(iat_snet, network.edgecount)
+glob_m <- as.data.frame(glob_m) |>
+  tibble::rownames_to_column("t") |>
+  dplyr::rename(edges = glob_m)
+```
+
+## Isolates
+
+```{r}
+loc_iso <- sapply(iat_snet, isolates)
+glob_iso <- as.data.frame(sapply(loc_iso, length)) |>
+  tibble::rownames_to_column("t") |>
+  dplyr::rename(isolates = `sapply(loc_iso, length)`)
+```
+
+## Density
+
+```{r}
+glob_dens_sub <- tSnaStats(iat_dyn_noiso, snafun = "gden")
+glob_dens_sub
+```
+
+```{r}
+glob_dens <- tSnaStats(iat_dyn, snafun = "gden")
+glob_dens
+```
+
+## Diameter
+
+```{r}
+glob_dia <- sapply(iat_inet, igraph::diameter)
+glob_dia <- as.data.frame(glob_dia) |>
+  tibble::rownames_to_column("t") |>
+  dplyr::rename(diameter = glob_dia)
+```
+
+```{r}
+dia_id <- sapply(iat_inet, igraph::get_diameter)
+dia_far <- lapply(iat_inet, igraph::farthest_vertices)
+```
+
+## Average path length
+
+```{r}
+glob_avpath <- sapply(iat_inet, igraph::average.path.length)
+glob_avpath <- as.data.frame(glob_avpath) |>
+  tibble::rownames_to_column("t") |>
+  dplyr::rename(avpath = glob_avpath)
+```
+
+## Components (strong)
+
+```{r}
+glob_comp <- tSnaStats(iat_dyn, snafun = "components")
+glob_comp
+```
+
+## Centralization
+
+```{r}
+glob_deg  <- tSnaStats(iat_dyn, snafun = "centralization", FUN = degree)
+glob_ideg <- tSnaStats(iat_dyn, snafun = "centralization", FUN = degree, cmode = "indegree")
+glob_odeg <- tSnaStats(iat_dyn, snafun = "centralization", FUN = degree, cmode = "outdegree")
+
+glob_bet <- tSnaStats(iat_dyn, snafun = "centralization", FUN = betweenness)
+glob_eig <- tSnaStats(iat_dyn, snafun = "centralization", FUN = evcent)
+glob_clo <- tSnaStats(iat_dyn_noiso, snafun = "centralization", FUN = closeness)
+```
+
+```{r}
+glob_cent <- data.frame(
+  "t" = c("t1","t2","t3","t4","t5","t6","x"),
+  glob_deg, glob_ideg, glob_odeg,
+  glob_eig, glob_bet, glob_clo
+)
+
+glob_cent <- glob_cent[1:6,] |>
+  dplyr::rename(
+    degree = `Series.1`,
+    indegree = `Series.1.1`,
+    outdegree = `Series.1.2`,
+    eigenvector = `Series.1.3`,
+    betweenness = `Series.1.4`,
+    closeness = `Series.1.5`
+  ) |>
+  dplyr::mutate(
+    time = recode(
+      t,
+      't1' = 't1: 1993-1997',
+      't2' = 't2: 1998-2002',
+      't3' = 't3: 2003-2007',
+      't4' = 't4: 2008-2012',
+      't5' = 't5: 2013-2017',
+      't6' = 't6: 2018-2023'
+    )
+  )
+```
+
+## Dyads
+
+### Dyad census
+
+```{r}
+glob_dyads <- tSnaStats(iat_dyn, snafun = "dyad.census")
+glob_dyads
+```
+
+```{r}
+glob_dyads_rel <- glob_dyads[-7,] |>
+  as.data.frame() |>
+  dplyr::mutate(
+    all = Mut + Asym + Null,
+    mut_pr = Mut/all,
+    asym_pr = Asym/all,
+    null_pr = Null/all
+  )
+```
+
+### Reciprocity
+
+```{r}
+glob_recip <- tSnaStats(iat_dyn, snafun = "grecip", measure = "edgewise")
+glob_recip
+```
+
+## Triads
+
+### Triad census
+
+```{r}
+glob_triads <- tSnaStats(iat_dyn, snafun = "triad.census")
+glob_triads
+```
+
+### Transitivity
+
+```{r}
+glob_trans <- tSnaStats(iat_dyn, snafun = "gtrans")
+glob_trans
+```
+
+## tErgmStats
+
+```{r}
+glob_terms <- tErgmStats(iat_dyn, "~ triangle + ctriple")
+glob_terms
+```
+
+edges triangle mutual ctriple 0 629 1545 31 92 1 679 1803 26 94 2 705
+2232 37 194 3 820 2786 39 190 4 915 3226 45 182 5 953 3519 48 218 6 0 0
+0 0
+
+# 1B) SUMMARY GRAPH-LEVEL STATISTICS (global)
+
+= n & m, density, diameter, geodesic, isolates, recip, trans,
+centralization, dyads & triads census - n,m,z,l,alpha,C,r (in L8, p.28)
+etc - Small World? - C vs L for all t6 - =average path length vs average
+clustering coef
+
+## combine dfs
+
+```{r}
+library(purrr)
+glob_comb <- list(glob_m, glob_avpath, glob_dia, glob_iso) %>% 
+  purrr::reduce(full_join, by="t") %>%
+  mutate(time = recode(t, 't1' = 't1: 1993-1997', 't2' = 't2: 1998-2002', 't3' = 't3: 2003-2007', 't4' = 't4: 2008-2012', 't5' = 't5: 2013-2017', 't6' = 't6: 2018-2023')) %>%
+  select(t, time, everything())
+glob_comb
+# save(glob_comb, file = "5_objects/glob_comb.RData")
+# load("5_objects/glob_comb.RData")
+```
+
+## time series dfs
+
+### function: convert time series objects to df
+
+Applies to time series objects from tSnaStats() function
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(tibble)
+
+make_df <- function(time_series) {
+  df <- as.data.frame(time_series)
+  df <- df %>% dplyr::mutate(t = c("t1","t2","t3","t4","t5","t6","tx"))
+  df <- df[1:6,]
+  df <- df %>%
+    mutate(time = recode(t, 't1' = 't1: 1993-1997', 't2' = 't2: 1998-2002', 't3' = 't3: 2003-2007', 't4' = 't4: 2008-2012', 't5' = 't5: 2013-2017', 't6' = 't6: 2018-2023')) %>% 
+    dplyr::select(t, everything())
+}
+
+# save(make_df, file = "5_objects/make_df.RData")
+# load("5_objects/make_df.RData")
+```
+
+### apply to time series
+
+```{r}
+glob_dens_df <- make_df(glob_dens) %>% dplyr::rename(density = `Series 1`)
+glob_comp_df <- make_df(glob_comp) %>% dplyr::rename(components = `Series 1`)
+glob_trans_df <- make_df(glob_trans) %>% dplyr::rename(transitivity = `Series 1`)
+glob_recip_df <- make_df(glob_recip) %>% dplyr::rename(reciprocity = Mut)
+glob_dyads_df <- make_df(glob_dyads) %>% dplyr::rename(dyad_mut = Mut, dyad_asym = Asym, dyad_null = Null)
+glob_triads_df <- make_df(glob_triads) %>% dplyr::rename(
+  triad_003 = `003`, triad_012 = `012`, triad_102 = `102`, triad_021D = `021D`, 
+  triad_021U = `021U`, triad_021C = `021C`, triad_111D = `111D`, triad_111U = `111U`,
+  triad_030T = `030T`, triad_030C = `030C`, triad_201 = `201`, triad_120D = `120D`,
+  triad_120U = `120U`, triad_120C = `120C`, triad_210 = `210`, triad_300 = `300`)
+glob_terms_df <- make_df(glob_terms)
+```
+
+## add time series to df
+
+```{r}
+# library(purrr)
+glob_df <- list(glob_comb, glob_dens_df, glob_comp_df, glob_recip_df, glob_trans_df, glob_cent, glob_dyads_df, glob_triads_df, glob_terms_df) %>% 
+  purrr::reduce(full_join, by=c("t","time")) %>%
+  select(t, time, everything())
+glob_df %>% View()
+# save(glob_df, file = "5_objects/glob_df.RData")
+load("5_objects/glob_df.RData")
+```
+
+```{r}
+names(glob_df)
+glob_df_pr <- glob_df %>%
+  dplyr::mutate(
+    all_triad = sum(triad_003,triad_012,triad_102,triad_021D,triad_021U,triad_021C,triad_111D,triad_111U,triad_030T,triad_030C,triad_201,triad_120D,triad_120U,triad_120C,triad_210,triad_300),
+    triad_003r = triad_003/all_triad,
+    triad_012r = triad_012/all_triad,
+    triad_102r = triad_102/all_triad,
+    triad_021Dr = triad_021D/all_triad,
+    triad_021Ur = triad_021U/all_triad,
+    triad_021Cr = triad_021C/all_triad,
+    triad_111Dr = triad_111D/all_triad,
+    triad_111Ur = triad_111U/all_triad,
+    triad_030Tr = triad_030T/all_triad,
+    triad_030Cr = triad_030C/all_triad,
+    triad_201r = triad_201/all_triad,
+    triad_120Dr = triad_120D/all_triad,
+    triad_120Ur = triad_120U/all_triad,
+    triad_120Cr = triad_120C/all_triad,
+    triad_210r = triad_210/all_triad,
+    triad_300Dr = triad_300/all_triad,
+    
+    all_dyad = sum(dyad_mut,dyad_asym,dyad_null),
+    dyad_mutr = dyad_mut/all_dyad,
+    dyad_asymr = dyad_asym/all_dyad,
+    dyad_nullr = dyad_null/all_dyad)
+ 
+    
+
+  
+```
+
+<br>
+
+# 2A) CALCULATE NODE-LEVEL STATISTICS (local)
+
+```{r}
+library(network)
+# note: load sna BEFORE loading tsna (some functionalities from tsna will be passed onto sna, e.g. tSnaStats() centralization)
+library(sna)
+library(tsna)
+```
+
+-   Degree centrality (how many edges?)
+-   Betweenness centrality (any nodes acting as important
+    distributors/brokers in the value chain?) --\> i.e. weak ties bridge
+    between Granovetter's strong ties/clusters
+-   Closeness centrality (how accessible are other nodes? How short are
+    paths to ALL other nodes, i.e. might be interpreted as power to
+    diversify one' access arms markets or providers)
+-   Eigen centrality (weighted by centrality of ones' connections) -\>
+    refines degree cent
+-   Page rank (weighted by out-degree) --\> refines degree cent
+-   Hub/authority centrality ("trusted" nodes with regards to product
+    reliability/quality?) --\> not implemented in tsna package, only in
+    igraph
+
+In the context of arms transfers, it is assumed that tie creating power
+lies primarily with the exporting rather than the importing country. The
+former chooses carefully to whom it transfers its weapons. States'
+governments often put into place restrictions based on political
+imperatives, rather than economic ones, esp. in times of geo-political
+tensions. Importers are assumed to buy from whomever is politically
+willing to sell and whose products are affordable enough, so the choice
+of the buyers is more restricted here (This assumption is based on
+literature and is of course debatable, but I will not evaluate its
+validity here).
+
+--\> We know that there'd be many buyers but only few sellers.
+
+As exporters have more influence in the tie making process, I will focus
+my analysis more on outgoing rather than incoming ties.
+
+## Centrality stats
+
+### Degree
+
+```{r}
+loc_deg <- tSnaStats(iat_dyn, "degree") # Changes in degree centrality
+
+```
+
+CHECK
+
+```{r}
+# loc_deg[1,] # Germany degree = 53
+# network::get.vertex.attribute(iat_snet[[1]], attrname="vertex.names")
+# sna::degree(iat_snet[[1]], gmode='graph') # germany id = 55, degree = 3??
+```
+
+### Outdegree
+
+```{r}
+loc_odeg <- tSnaStats(iat_dyn, snafun = "degree", cmode="outdegree") # FUN = degree,
+
+```
+
+CHECK
+
+```{r}
+loc_odeg[6,] # Germany in t1 = 50
+# loc_odeg_t1 <- loc_odeg[1,]
+# same same
+loc_odeg_2 <- sna::degree(iat_snet[[1]],gmode = "digraph", cmode="outdegree")
+loc_odeg_2[55] # Germany ID = 55, in t1 = 50
+```
+
+### Indegree
+
+```{r}
+loc_ideg <- tSnaStats(iat_dyn, snafun = "degree", cmode="indegree") # FUN = degree, 
+```
+
+### Betweenness
+
+Any nodes acting as important intermediates/links i.e. "arms
+distributors" in the value chain?
+
+```{r}
+loc_bet <- tSnaStats(iat_dyn, snafun="betweenness") 
+```
+
+```{r}
+# calculate manually on every tspell serapately...
+# loc_bet2 <- c(between(iat_snet[[1]],degree,mode="digraph"),
+#                 between(iat_snet[[2]],degree,mode="digraph"), # 0.30
+#                 between(iat_snet[[3]],degree,mode="digraph"), # 0.28
+#                 between(iat_snet[[4]],degree,mode="digraph"), # 0.29
+#                 between(iat_snet[[5]],degree,mode="digraph"), # 0.34
+#                 between(iat_snet[[6]],degree,mode="digraph")) # 0.34
+# loc_bet2 <- round(loc_bet2, 3)
+# loc_bet2
+```
+
+### Eigenvector
+
+Social capital, i.e. take into account the "quality" of nodes'
+connections (weighted by degree of node's partners)
+
+```{r}
+loc_eig <- tSnaStats(iat_dyn, snafun="evcent")
+```
+
+```{r}
+# load("iat_inet_noiso.RData")
+library(igraph)
+
+# t1
+loc_clo1 <- igraph::closeness(iat_inet_noiso$t1) # Calculate closeness centr
+node_names <- V(iat_inet_noiso$t1)$name # Get node names
+valid_indices <- !is.nan(loc_clo1) # Remove NaN values etc
+loc_clo1 <- loc_clo1[valid_indices]
+node_names <- node_names[valid_indices]
+loc_clo1 <- setNames(loc_clo1, node_names)
+# hist(loc_clo1,20)
+
+# t2
+loc_clo2 <- igraph::closeness(iat_inet_noiso$t2) # Calculate closeness centr
+node_names <- V(iat_inet_noiso$t2)$name # Get node names
+valid_indices <- !is.nan(loc_clo2) # Remove NaN values etc
+loc_clo2 <- loc_clo2[valid_indices]
+node_names <- node_names[valid_indices]
+loc_clo2 <- setNames(loc_clo2, node_names)
+# hist(loc_clo2,20)
+
+# t3
+loc_clo3 <- igraph::closeness(iat_inet_noiso$t3) # Calculate closeness centr
+node_names <- V(iat_inet_noiso$t3)$name # Get node names
+valid_indices <- !is.nan(loc_clo3) # Remove NaN values etc
+loc_clo3 <- loc_clo3[valid_indices]
+node_names <- node_names[valid_indices]
+loc_clo3 <- setNames(loc_clo3, node_names)
+# hist(loc_clo3,20)
+
+# t4
+loc_clo4 <- igraph::closeness(iat_inet_noiso$t4) # Calculate closeness centr
+node_names <- V(iat_inet_noiso$t4)$name # Get node names
+valid_indices <- !is.nan(loc_clo4) # Remove NaN values etc
+loc_clo4 <- loc_clo4[valid_indices]
+node_names <- node_names[valid_indices]
+loc_clo4 <- setNames(loc_clo4, node_names)
+# hist(loc_clo4,20)
+
+# t5
+loc_clo5 <- igraph::closeness(iat_inet_noiso$t5) # Calculate closeness centr
+node_names <- V(iat_inet_noiso$t5)$name # Get node names
+valid_indices <- !is.nan(loc_clo5) # Remove NaN values etc
+loc_clo5 <- loc_clo5[valid_indices]
+node_names <- node_names[valid_indices]
+loc_clo5 <- setNames(loc_clo5, node_names)
+# hist(loc_clo5,20)
+
+# t6
+loc_clo6 <- igraph::closeness(iat_inet_noiso$t6) # Calculate closeness centr
+node_names <- V(iat_inet_noiso$t6)$name # Get node names
+valid_indices <- !is.nan(loc_clo6) # Remove NaN values etc
+loc_clo6 <- loc_clo6[valid_indices]
+node_names <- node_names[valid_indices]
+loc_clo6 <- setNames(loc_clo6, node_names)
+# hist(loc_clo6,20)
+
+# combined
+loc_clo_list <- list("t1"=loc_clo1, "t2"=loc_clo2, "t3"=loc_clo3, "t4"=loc_clo4, "t5"=loc_clo5, "t6"=loc_clo6)
+loc_clo_list
+
+# save(loc_clo_list, file = "5_objects/loc_clo_list.RData")
+# load("5_objects/loc_clo_list.RData")
+```
+
+```{r}
+## OLD CODE
+# since the 6 networks have different sizes now, we cannot use tSnaStats anymore,
+# so we'll calculate closeness centrality for each network separately
+
+# # t1
+# loc_clo1 <- igraph::closeness(iat_inet_noiso$t1)
+# loc_clo1 <- loc_clo1[!is.nan(loc_clo1)]
+# summary(loc_clo1)
+# 
+# # t2
+# loc_clo2 <- igraph::closeness(iat_inet_noiso$t2)
+# loc_clo2 <- loc_clo2[!is.nan(loc_clo2)]
+# summary(loc_clo2)
+# 
+# # t3
+# loc_clo3 <- igraph::closeness(iat_inet_noiso$t3)
+# loc_clo3 <- loc_clo3[!is.nan(loc_clo3)]
+# summary(loc_clo3)
+# 
+# # t4
+# loc_clo4 <- igraph::closeness(iat_inet_noiso$t4)
+# loc_clo4 <- loc_clo4[!is.nan(loc_clo4)]
+# summary(loc_clo4)
+# 
+# # t5
+# loc_clo5 <- igraph::closeness(iat_inet_noiso$t5)
+# loc_clo5 <- loc_clo5[!is.nan(loc_clo5)]
+# summary(loc_clo5)
+# 
+# # t6
+# loc_clo6 <- igraph::closeness(iat_inet_noiso$t6)
+# loc_clo6 <- loc_clo6[!is.nan(loc_clo6)]
+# summary(loc_clo6)
+# 
+# # combined
+# loc_clo_list <- list("t1"=loc_clo1, "t2"=loc_clo2, "t3"=loc_clo3, "t4"=loc_clo4, "t5"=loc_clo5, "t6"=loc_clo6)
+# loc_clo_list
+# loc_clo_list
+```
+
+## Save centrality stats in dfs
+
+We write functions to turn time series objects to dfs for our centrality
+measures, except for closeness centrality, which is not a time series
+object but a list of vectors instead.
+
+### function 3: time series (185 countries as columns) to df
+
+The wide and long functions are based on one another, so they must be
+run in subsequent order.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(tibble)
+```
+
+#### wide
+
+```{r}
+# time x countries
+make_df_wide <- function(time_series) {
+  df <- as.data.frame(time_series)
+  df <- df[1:6,]
+  df <- df %>% dplyr::mutate(t = c("t1","t2","t3","t4","t5","t6"))
+  df <- df %>% dplyr::select(t, everything())
+}
+
+# save(make_df_wide, file = "5_objects/make_df_wide.RData")
+# load("5_objects/make_df_wide.RData")
+```
+
+#### long
+
+```{r}
+# this is basically the operation used later to transform stats dfs to a form appropriate for visualization
+library(tidyr)
+make_df_long <- function(df_wide) {
+  df <- df_wide
+  df <- df %>%
+    pivot_longer(cols = 2:158, names_to = "state1h", values_to = "stat") %>%
+    mutate(time = recode(t, 't1' = 't1: 1993-1997', 't2' = 't2: 1998-2002', 't3' = 't3: 2003-2007', 't4' = 't4: 2008-2012', 't5' = 't5: 2013-2017', 't6' = 't6: 2018-2023')) %>% 
+    select(time, state1h, t, everything())
+}
+
+
+
+# save(make_df_long, file = "5_objects/make_df_long.RData")
+# load("5_objects/make_df_long.RData")
+```
+
+### apply functions
+
+```{r}
+# apply wide
+loc_deg_df_w <- make_df_wide(loc_deg)
+loc_ideg_df_w <- make_df_wide(loc_ideg)
+loc_odeg_df_w <- make_df_wide(loc_odeg)
+loc_bet_df_w <- make_df_wide(loc_bet)
+loc_eig_df_w <- make_df_wide(loc_eig)
+```
+
+```{r}
+# apply long
+loc_deg_df <- make_df_long(loc_deg_df_w) %>% dplyr::rename(degree = stat)
+loc_ideg_df <-make_df_long(loc_ideg_df_w) %>% dplyr::rename(indegree = stat)
+loc_odeg_df <-make_df_long(loc_odeg_df_w) %>% dplyr::rename(outdegree = stat)
+loc_bet_df <-make_df_long(loc_bet_df_w) %>% dplyr::rename(betweenness = stat)
+loc_eig_df <-make_df_long(loc_eig_df_w) %>% dplyr::rename(eigenvector = stat)
+```
+
+### calculate separately: closeness centrality
+
+Closeness df
+
+```{r}
+# closeness dfs for each time spell
+clo_df1 <- data.frame(state1h = names(loc_clo_list$t1),
+                      closeness = loc_clo_list$t1)
+clo_df1$t <- "t1"
+
+clo_df2 <- data.frame(state1h = names(loc_clo_list$t2),
+                      closeness = loc_clo_list$t2)
+clo_df2$t <- "t2"
+
+clo_df3 <- data.frame(state1h = names(loc_clo_list$t3),
+                      closeness = loc_clo_list$t3)
+clo_df3$t <- "t3"
+
+clo_df4 <- data.frame(state1h = names(loc_clo_list$t4),
+                      closeness = loc_clo_list$t4)
+clo_df4$t <- "t4"
+
+clo_df5 <- data.frame(state1h = names(loc_clo_list$t5),
+                      closeness = loc_clo_list$t5)
+clo_df5$t <- "t5"
+
+clo_df6 <- data.frame(state1h = names(loc_clo_list$t6),
+                      closeness = loc_clo_list$t6)
+clo_df6$t <- "t6"
+
+# Combine all the separate dataframes into one
+clo_df_combined <- rbind(clo_df1, clo_df2, clo_df3, clo_df4, clo_df5, clo_df6)
+
+# save(clo_df_combined, file = "5_objects/clo_df_combined.RData")
+# load("5_objects/clo_df_combined.RData")
+```
+
+Empty df
+
+```{r}
+# first initiate empty data frame of dimension 6x158, and add time spell ID variable
+# load("cov_net.RData")
+emp_clo_df <- data.frame(matrix(ncol = 158, nrow = 6))
+names(emp_clo_df)[2:158] <- cov_net$t1$state1h
+emp_clo_df <- dplyr::rename(emp_clo_df, t = `X1`)
+emp_clo_df$t <- c("t1", "t2", "t3", "t4", "t5", "t6")
+emp_clo_df <- emp_clo_df %>% # convert to long df
+  pivot_longer(cols = 2:158, names_to = "state1h", values_to = "closeness") 
+```
+
+Merge empty & filled closeness df
+
+```{r}
+# merge empty df with clo_df_combined 
+loc_clo_df <- merge(emp_clo_df, clo_df_combined, 
+                by = c("t", "state1h"), all = T, suffixes = c(".y", ""))
+
+# Remove empty 'closeness.y' column
+loc_clo_df$closeness.y <- NULL
+
+# replace NA with 0 for isolates
+loc_clo_df$closeness <- ifelse(is.na(loc_clo_df$closeness), 0, loc_clo_df$closeness)
+
+# finishing 
+loc_clo_df <-  loc_clo_df %>% 
+    mutate(time = t) %>% 
+    mutate(time = recode(time, 't1' = 't1: 1993-1997', 't2' = 't2: 1998-2002', 't3' = 't3: 2003-2007', 't4' = 't4: 2008-2012', 't5' = 't5: 2013-2017', 't6' = 't6: 2018-2023')) %>% 
+    select(time, state1h, t, everything())
+
+loc_clo_df <- as_tibble(loc_clo_df)
+# range(clo_df_combined$closeness) # no isolates
+# range(loc_clo_df$closeness) # including isolates
+
+# save(loc_clo_df, file = "5_objects/loc_clo_df.RData")
+# load("5_objects/loc_clo_df.RData")
+```
+
+### explore
+
+```{r}
+loc_odeg_df %>%  
+  arrange(t, desc(outdegree))
+
+loc_ideg_df %>%  
+  arrange(t, desc(indegree))
+
+loc_bet_df %>%   
+  arrange(t, desc(betweenness))
+
+loc_eig_df %>% 
+  arrange(t, desc(eigenvector))
+
+loc_clo_df %>%  
+  arrange(t, desc(closeness))
+```
+
+<br>
+
+# 2B) SUMMARY NODE-LEVEL STATISTICS (local)
+
+### All countries' centrality measures
+
+```{r}
+loc_cent_list <- list(degree = loc_deg_df, 
+                      indegree = loc_ideg_df, 
+                      outdegree = loc_odeg_df, 
+                      betweenness = loc_bet_df,
+                      eigenvector = loc_eig_df,
+                      closeness = loc_clo_df)
+# save(loc_cent_list, file = "5_objects/loc_cent_list.RData")
+# load("5_objects/loc_cent_list.RData")
+```
+
+### Merge centrality stats to node covariate df
+
+```{r}
+library(purrr)
+library(dplyr)
+library(stringr)
+library(countrycode)
+
+# merge all centrality measure to one big df
+loc_cent_df <-  loc_cent_list %>% # exclude closeness centr
+  purrr::reduce(full_join, by = c("state1h","t","time")) %>% 
+  dplyr::select(state1h, t, time, everything()) %>%
+  dplyr::arrange(t, state1h)
+# print(loc_cent_df)
+
+```
+
+```{r}
+# save(loc_cent_df, file = "5_objects/loc_cent_df.RData")
+# load("5_objects/loc_cent_df.RData")
+```
+
+#### merged cov_complete
+
+```{r}
+# load("cov_agg.RData")
+cov_complete <- list(cov_agg, loc_cent_df) %>% # complete df
+  purrr::reduce(full_join, by = c("state1h","t")) %>% 
+  dplyr::rename(iso3c = iso1) %>%
+  mutate(iso2c = countrycode(iso3c, origin = 'iso3c', destination = 'iso2c'),
+         t_num = as.numeric(str_replace_all(t, "t", ""))) %>% 
+  mutate(t = as.factor(t),
+         time = as.factor(time)) %>%
+  select(state1h, iso2c, iso3c, t, t_num, time, everything()) %>% 
+  arrange(t, state1h)
+  
+colSums(is.na(cov_complete)) # no NAs after merging etc
+
+# save(cov_complete, file = "5_objects/cov_complete.RData")
+# load("5_objects/cov_complete.RData")
+```
+
+```{r}
+## split & store as a list
+
+# unclass_cols <- function(df) {
+#   df[] <- lapply(df, unclass)
+#   return(df)
+# }
+# cov_agg <- unclass_cols(cov_agg)
+
+cov_complete_list <- split(cov_complete, cov_complete$t) # split by tspell
+cov_complete_list$t1
+
+# save(cov_complete_list, file = "5_objects/cov_complete_list.RData") # as R data file
+# load("5_objects/cov_complete_list.RData")
+```
+
+# 3) COLLAPSED NETWORK 1993-2023
+
+```{r}
+# collapse all networks' ties
+iat_adj.9323 <- iat_adj2.bin[[1]] + iat_adj2.bin[[2]] + iat_adj2.bin[[3]] + iat_adj2.bin[[4]] + iat_adj2.bin[[5]] + iat_adj2.bin[[6]] 
+
+# binarize
+iat_adj.9323[iat_adj.9323>0] <- 1
+
+# turn into graph
+# library(network)
+iat9323 <- network(iat_adj.9323, directed = T)
+```
+
+```{r}
+# Calculate cent measures
+# library(network)
+# library(sna)
+indegree <- degree(iat9323, cmode = "indegree")
+outdegree <- degree(iat9323, cmode = "outdegree")
+betweenness <- betweenness(iat9323)
+# closeness <- closeness(iat9323)
+eigenvector <- evcent(iat9323)
+
+```
+
+```{r}
+# extract network without isolates
+isolates <- which(sna::degree(iat9323) == 0)
+a <- iat9323
+iat9323_noiso <- network::delete.vertices(a, isolates)
+edges <- as.matrix(network::as.edgelist(iat9323_noiso))
+node_names <- network::get.vertex.attribute(iat9323_noiso, "vertex.names")
+vertices <- data.frame(name = node_names)
+# vertices
+edges <- data.frame(from = node_names[edges[, 1]], to = node_names[edges[, 2]])
+# edges
+iat9323_inoiso <- igraph::graph_from_data_frame(d = edges, vertices = vertices, directed = network::is.directed(iat9323_noiso))
+
+# calculate closeness centr for that have closeness
+closeness <- igraph::closeness(iat9323_inoiso)
+valid_indices <- !is.nan(closeness) # Remove NaN values etc
+closeness <- closeness[valid_indices]
+node_names <- node_names[valid_indices]
+closeness <- setNames(closeness, node_names)
+# closeness
+
+# add the rest
+countries <- cov_complete %>% pull(state1h) %>% unique()
+closeness_all <- rep(0, length(countries))
+names(closeness_all) <- countries
+closeness_all[names(closeness)] <- closeness
+closeness_all
+closeness = unname(closeness_all)
+```
+
+```{r}
+# Combine
+iso2 <- cov_complete %>% pull(iso2c) %>% unique
+iso3 <- cov_complete %>% pull(iso3c) %>% unique
+cent9323 <- data.frame(
+  state1h = network.vertex.names(iat9323),
+  iso2c = iso2,
+  iso3c = iso3,
+  ideg = indegree,
+  odeg = outdegree,
+  bet = betweenness,
+  clo = closeness,
+  eig = eigenvector
+)
+```
+
+```{r}
+# save(cent9323, file = "5_objects/cent9323.RData") # as R data file
+# load("5_objects/cent9323.RData") 
+# save(iat9323, file = "5_objects/iat9323.RData") # as R data file
+# load("5_objects/iat9323.RData") 
+# save(iat_adj.9323, file = "5_objects/iat_adj.9323.RData") # as R data file
+# load("5_objects/iat_adj.9323.RData") 
+```
+
+```{r}
+# iat_a <- iat_snet$t1 + iat_snet$t2
+# summary(iat_snet$t1) # 629
+# summary(iat_snet$t2) # 679
+# summary(iat_snet$t6) # 953
+```
+
+<br> <br> <br>
+
+# 4) \[DROPPED: Block-level stats\]
+
+-   Commu detection --\> evolution over time: core-periphery? decentral?
+    ordered? (L7, p.18)
+
+### Components (k-core)
+
+Returns the number of strong components (but other component types can
+be returned if so desired). Strong vs weak components (directed nw)
+https://www.rdocumentation.org/packages/sna/versions/2.7-1/topics/components
+
+```{r}
+# component <- tSnaStats(iat_dyn, snafun="components") # strong components
+# component
+```
+
+#### Cliques (n-clique; k-plex)
+
+#### Clusters
+
+#### Assortativity/Homophily/Communities
+
+-   Modularity
+-   Sub-graphs based on some attributes
+
+#### Community detection
+
+-   Block modeling etc
+-   hierarchical clustering --\> heatmaps (Heiberger, p.4)
+-   dentograms
+-   components, isolates etc
+
+## Equivalence (Clustering)
+
+#### Structural equivalence
+
+#### Regular equivalence
+
+<br> <br> <br>
+
+# 5) \[DROPPED: Dynamic stats\]
+
+General
+
+```{r}
+# summary(iat_dyn%t%1) # t = 1
+# summary(network.extract(iat_dyn, at = 1)) # same command
+# summary(network.extract(iat_dyn, onset=1,terminus=6))
+```
+
+Temporal paths
+
+```{r}
+# # who is v1?
+# get.vertex.attribute(iat_dyn, "vertex.names")[1]
+# 
+# # who is in v1's FRS?
+# tp <- tPath(iat_dyn, v=1, direction = 'fwd')
+# print(tp)
+# 
+# # Plot FRS
+# par(mfrow=c(1,2))
+# coords <- plot(tp, main="Forward Reachable Set from v1", cex.main=.8)
+# plotPaths(iat_dyn, tp, 
+#           coord = coords,
+#           main = "Overlaid on collapsed Network",
+#           label.cex=.8, cex.main=.8)
+```
+
+Durations are another feature unique to temporal networks, representing
+the lenth of time that vertices and edges are active. The tsna package
+currently contains several functions for reporting on active durations.
+Most of these functions have options for varying the units of
+aggregation or analysis. For example, the edge measures can be adjusted
+from focusing on an ‘edge’ (aggregating across all of the activity
+spells associated with that edge) or a ‘spell’ (a single interval of
+contiguous time during which an edge is activated).
+
+Edges activity
+
+```{r}
+# Edge dynamics in data frame view
+# as.data.frame(iat_dyn)[,c(1:4,7:8)]
+
+# edge activity
+# get.edge.activity(iat_dyn)[1:2]
+```
+
+Edge duration
+
+```{r}
+# table(edgeDuration(iat_dyn, mode = 'duration', subject = 'spells')) 
+# 
+# summary(edgeDuration(iat_dyn, mode = 'duration', subject = 'spells'))
+# 
+# hist(edgeDuration(iat_dyn, mode = 'duration', subject = 'spells'))  
+```
+
+Vertex duration
+
+```{r}
+# table(vertexDuration(iat_dyn, mode = 'duration', subject = 'spells')) 
+```
+
+Movies
+
+```{r}
+# render.d3movie(iat_dyn,
+#                plot.par=list(displaylabels=F),
+#                output.mode = 'htmlWidget') # using htmlwidgets pck
+```
+
+Animation
+
+```{r}
+# render.animation(iat_dyn) # don't run, computes for too long
+# ani.replay()
+
+
+
+
+
+
+
+
+# WRITING UP: descriptive analysis
+
+## Notes for analysis
+-   Lag?: start using covs & dyadic from 1993 as t0, but start iat network from 1993? NO! Only lag with regards to network statistics
+-   When to use mean (yearly average) and when to use sum values for network objects as weight? Does that change anything to results?
+-   Scaling issues
+-   codes inspired from SNA Heibi course
+
+## Discussion
+-   not fully using all theoretically relevant covariates
+-   scaling issues
+-   NAs not yet resolved
+-   
+```
+
+# OUTPUTS
+
+```{r}
+## GRAPH LEVEL
+load("5_objects/glob_cent.RData") # S2
+load("5_objects/glob_df.RData") # S_all
+
+## COUNTRY LEVEL
+load("cov_complete.RData")
+load("5_objects/cov_complete_list.RData")
+load("loc_cent_df.RData") # S5
+load("loc_cent_list.RData")
+
+## IAT WITHOUT ISOLATES
+load("4_objects/iat_inet_noiso.RData")
+load("4_objects/iat_snet_noiso.RData")
+load("4_objects/iat_dyn_noiso.RData")
+
+```

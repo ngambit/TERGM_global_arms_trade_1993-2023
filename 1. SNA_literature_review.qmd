@@ -1,0 +1,249 @@
+---
+title: "INTERNATIONAL ARMS TRADE NETWORKS: SYSTEMATIC LITERATURE REVIEW"
+author: "QN Nguyen"
+date: "`r Sys.Date()`"
+format:
+  html:
+    theme: cosmo
+    highlight-style: tango
+    toc: true
+    toc-depth: 2
+    toc-float: true
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# SETTINGS
+
+```{r}
+knitr::opts_chunk$set(
+  fig.width = 12,
+  fig.height = 10,
+  fig.path = "Figs/",
+  fig.align = "center",
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  eval = TRUE,
+  include = TRUE
+)
+
+options(
+  xtable.comment = FALSE,
+  scipen = 9999,
+  tinytex.verbose = TRUE
+)
+```
+
+```{r}
+# knitr::opts_chunk$set(fig.width=12, 
+#                       fig.height=10, 
+#                       fig.path='Figs/',
+#                       fig.align = "center",
+#                       echo=T, 
+#                       warning=F, 
+#                       message=F,
+#                       error=F,
+#                       eval=T,
+#                       include=T)
+# 
+# options(xtable.comment = FALSE, 
+#         scipen = 9999,
+#         tinytex.verbose = TRUE) # scipen does away with exponential notations
+
+# path <- "your working directory"
+# setwd(path)
+# rm(list= ls()) # clean up environment
+# rm(list= setdiff(ls(), "except"))
+```
+
+```{r}
+#| echo: false
+
+# update.packages()
+# install.packages("pacman")
+# library(pacman)
+pacman::p_load(magrittr, dplyr, devtools, haven, utils, kableExtra, 
+               foreign, haven, sjmisc, psych, readr, stringdist)
+
+```
+
+# Import scopus & wos articles
+
+The data was extracted from Scopus and Web of Science using the
+following search query in title, keywords and abstracts: **("arm\*
+trade" OR "arm\* transfer") AND "network analysis"** Only
+English-speaking articles/proceedings/early access/book chapter were
+included.
+
+Initally, scopus yielded 59 hits and wos 42 hits. After qualitatively
+examining the abstracts for the articles relevance, only 16 titles were
+retained for scopus and another 16 for wos. Now I'll check whether those
+16 articles are the same ones in both lists, or whether there are also
+unique titles identified by one database but not by the other. This
+could have easily been done by hand, but designing a systematic
+approach/code for the procedure will save time for future systematic
+literature reviews as I'll reuse the code)
+
+Scopus:
+
+```{r}
+# Import scopus metadata
+scopus <- read.csv("data/litrev/scopus.csv", sep = ",", header = T)
+
+# subset relevant identifiers
+names(scopus)
+scopus <- scopus %>% 
+  select(Authors,Title,Year,Abstract, Author.Keywords, DOI, Cited.by) %>% 
+  rename(
+    author = Authors,
+    title = Title,
+    year = Year,
+    doi = DOI,
+    abstract = Abstract,
+    keywords = Author.Keywords,
+    cited = Cited.by)
+```
+
+WoS:
+
+```{r}
+# Import wos metadata
+wos <- read.csv("litrev/wos.csv", sep = ";", header = T) # only 7 vbls
+
+# subset relevant identifiers
+names(wos)
+wos <- wos %>%
+  select(Authors,Article.Title,Publication.Year,Abstract, Author.Keywords, DOI, Times.Cited..All.Databases) %>% 
+  rename(
+    author = Authors,
+    title = Article.Title,
+    year = Publication.Year,
+    doi = DOI,
+    abstract = Abstract,
+    keywords = Author.Keywords,
+    cited = Times.Cited..All.Databases)
+```
+
+# Matching scopus & wos articles
+
+```{r}
+# Get a Levenshtein edit distance matrix
+stringdistmatrix(wos$title, scopus$title, method = "lv")
+
+# --> e.g. the titles in element [12,] and [,16] have an edit distance of 4,
+# the rest seems to be so many character edits different from one another,
+# so there is no ambiguity in the matching process even if we set the threshhold
+# as high as 20. We'll however choose threshhold at 5 character edits to match titles.
+
+# match scopus articles to wos articles
+amatch(wos$title, scopus$title,maxDist = 5, method = "lv")
+# e.g. row 1 in the wos df matches row 3 in the scopus df, wos row 2 matches scopus row 11 etc...
+```
+
+# Exclude duplicates
+
+Combine Scopus & WoS
+
+```{r}
+# combine web of science & scopus dfs to one corpus df
+corpus <- rbind(wos,scopus[,])
+```
+
+Exclude exact duplicates
+
+```{r}
+# Identify and delete cases with exact duplicate titles
+corpus.a <- corpus %>% 
+  filter(!duplicated(corpus$title))
+# 12 exact duplicates were deleted
+```
+
+Exclude similar duplicates
+
+```{r}
+# write function to exclude duplicates within a specific Levenshtein edit distance similarity threshhold
+# arguments: 
+#   vector = string vector to be examined, 
+#   max_dist = Levenshtein edit distance threshhold
+
+unique_el <- function(vector, max_dist) {
+  # Initialize the result vector
+  result <- character(0)
+  
+  # Iterate over the string vector
+  for (string in vector) {
+    # Check whether string is similar to any string in the result vector within Levenshtein edit threshhold specified in max_dist
+    is_similar <- any(adist(string, result, ignore.case = TRUE) <= max_dist)
+    
+    # If the string is not similar to any string already in the result vector, then add it to the result vector
+    if (!is_similar) {
+      result <- c(result, string)
+    }
+  }
+  
+  # Return the result vector
+  return(result)
+}
+
+# retain unique titles within Levenshtein distance of 5
+unique_titles <- unique_el(corpus.a$title, 5) 
+corpus.b <- corpus.a %>% 
+  filter(title %in% unique_titles)
+# 4 similar duplicates removed
+```
+
+# Cleaned literature list
+
+```{r}
+# tidy df
+corpus.s <- corpus.b %>% 
+  arrange(desc(cited)) %>% # sort, number citations in descending order (alt: corpus.s[order(-corpus.s$cited), ]
+  mutate(id = row_number()) %>% # add case id
+  select(id, cited, author, title, year, everything())  # reorder vbl columns
+
+# glimpse
+View(corpus.s)
+# head(corpus.s)%>%
+#   kbl() %>%
+#   kable_paper()
+
+# clean up environment
+# rm(list= setdiff(ls(), "corpus.s"))
+
+# Save & Call workingfile
+# write_csv2(corpus.s, "corpus_workingfile.csv")
+# corpus.s <- read_csv2("corpus_workingfile.csv")
+```
+
+--\> a total of 16 articles for systematic review of literature in
+international arms trade/transfer (limited to major conventional weapons
+trade after WWII).
+
+# Explore
+
+```{r}
+# distribution of publication years
+frq(corpus.s$year) 
+```
+
+--\> research into the global arms trade network took off starting 2014
+and peaked in 2020 with 5 publications
+
+```{r}
+# glimpse
+head(corpus.s[,c(2:5)], 16)%>%
+  kbl() %>%
+  kable_paper()
+```
+
+--\> unsurprisingly, citation count is mostly related to publication
+year (the earlier published, the more citations). Thurner et al's study
+from 2019 seems to be an exception, with 31 citations despite its later
+publication year. Chances are, that article is especially important for
+research in global arms transfers networks. Akerman/Seim (2014) seem to
+be the first network study of international arms trade, as such it can
+be considered a seminal paper in the domain. I'll use this ordered list
+to guide my systematic review.
